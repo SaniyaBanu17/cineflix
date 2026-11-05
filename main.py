@@ -8,12 +8,18 @@ import streamlit as st
 SIMILARITY_URL = "https://github.com/SaniyaBanu17/cineflix/releases/download/v1.0/similarity.pkl"
 SIMILARITY_PATH = "similarity.pkl"
 
-# Auto-download similarity.pkl if it doesn't exist locally (for Streamlit Cloud)
-if not os.path.exists(SIMILARITY_PATH):
-    with st.spinner("Downloading model files (~176MB)... Please wait a moment. This only happens on initial startup."):
-        response = requests.get(SIMILARITY_URL)
-        with open(SIMILARITY_PATH, "wb") as f:
-            f.write(response.content)
+# Auto-download similarity.pkl securely if missing or empty
+if not os.path.exists(SIMILARITY_PATH) or os.path.getsize(SIMILARITY_PATH) < 1000000:
+    with st.spinner("Downloading large model file (~176MB) from GitHub Releases... Please wait."):
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(SIMILARITY_URL, headers=headers, stream=True)
+        if response.status_code == 200:
+            with open(SIMILARITY_PATH, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        else:
+            st.error(f"Failed to download similarity file. Status code: {response.status_code}")
 
 # Page Configuration
 st.set_page_config(page_title="Cineflix - Movie Recommendation System", page_icon="🎬", layout="wide")
@@ -36,9 +42,13 @@ def fetch_poster(movie_id):
 # Load data safely using st.cache_resource
 @st.cache_resource
 def load_data():
-    movie_dict = pickle.load(open('movie_dict.pkl', 'rb'))
+    with open('movie_dict.pkl', 'rb') as f:
+        movie_dict = pickle.load(f)
     movies_df = pd.DataFrame(movie_dict)
-    similarity_matrix = pickle.load(open(SIMILARITY_PATH, 'rb'))
+    
+    with open(SIMILARITY_PATH, 'rb') as f:
+        similarity_matrix = pickle.load(f)
+        
     return movies_df, similarity_matrix
 
 try:
