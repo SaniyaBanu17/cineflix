@@ -7,7 +7,7 @@ import streamlit as st
 # Page Configuration
 st.set_page_config(page_title="Cineflix - Watch & Discover", page_icon="🎬", layout="wide")
 
-# --- CLEAN NETFLIX & WHITE TEXT STYLING ---
+# --- MATCHING EXACT STYLING FROM REFERENCE IMAGE ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&display=swap');
@@ -22,7 +22,7 @@ st.markdown("""
         color: #E50914;
         font-family: 'Bebas Neue', cursive;
         font-size: 2.8rem;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         margin: 0;
     }
     
@@ -35,29 +35,32 @@ st.markdown("""
         color: #ffffff;
     }
 
+    /* Exact Interstellar Hero Banner Layout */
     .hero-box {
-        background: linear-gradient(180deg, rgba(20,20,20,0.2) 0%, rgba(20,20,20,1) 100%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo6LEuPJ19zB.jpg');
+        background: linear-gradient(180deg, rgba(20,20,20,0.1) 0%, rgba(20,20,20,0.85) 100%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo6LEuPJ19zB.jpg');
         background-size: cover;
-        background-position: center;
-        padding: 60px 40px;
-        border-radius: 10px;
-        margin-bottom: 25px;
-        box-shadow: 0px 10px 30px rgba(0,0,0,0.8);
+        background-position: center top;
+        padding: 70px 45px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        box-shadow: 0px 10px 30px rgba(0,0,0,0.9);
     }
 
+    /* Exact white button styling with dark text matching screenshot */
     .stButton>button {
-        background-color: #E50914;
-        color: white;
+        background-color: #f0f0f0;
+        color: #141414;
         font-family: 'Montserrat', sans-serif;
         font-weight: 600;
-        border-radius: 4px;
-        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        padding: 0.5rem 1.2rem;
         border: none;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
     }
 
     .stButton>button:hover {
-        background-color: #f40612;
-        color: white;
+        background-color: #ffffff;
+        color: #000000;
     }
 
     .card-title {
@@ -80,7 +83,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- SESSION STATE ---
+# --- SESSION STATE INITIALIZATION ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "users_db" not in st.session_state:
+    st.session_state.users_db = {"admin": "password123", "saniya": "San123"}
 if "watchlist" not in st.session_state:
     st.session_state.watchlist = []
 if "current_page" not in st.session_state:
@@ -90,7 +97,55 @@ if "selected_genre" not in st.session_state:
 if "show_details" not in st.session_state:
     st.session_state.show_details = False
 
-# --- BACKEND LOADING ---
+# --- AUTHENTICATION SCREEN ---
+if not st.session_state.logged_in:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-title' style='text-align:center;'>🎬 CINEFLIX</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #b3b3b3; margin-bottom: 30px;'>Unlimited movies, TV shows, and recommendations.</p>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 1.2, 1])
+    with col2:
+        tab1, tab2, tab3 = st.tabs(["Sign In", "Register", "Forgot Password"])
+        
+        with tab1:
+            st.markdown("### Sign In")
+            l_user = st.text_input("Username", key="l_user")
+            l_pass = st.text_input("Password", type="password", key="l_pass")
+            if st.button("Login"):
+                if l_user in st.session_state.users_db and st.session_state.users_db[l_user] == l_pass:
+                    st.session_state.logged_in = True
+                    st.success("Login successful!")
+                    st.rerun()
+                else:
+                    st.error("Invalid username or password.")
+                    
+        with tab2:
+            st.markdown("### Create Account")
+            r_user = st.text_input("Choose Username", key="r_user")
+            r_pass = st.text_input("Choose Password", type="password", key="r_pass")
+            if st.button("Sign Up"):
+                if r_user and r_pass:
+                    if r_user in st.session_state.users_db:
+                        st.warning("Username already exists.")
+                    else:
+                        st.session_state.users_db[r_user] = r_pass
+                        st.success("Account created successfully! Please log in.")
+                else:
+                    st.warning("Please fill in all fields.")
+                    
+        with tab3:
+            st.markdown("### Reset Password")
+            f_user = st.text_input("Username", key="f_user")
+            f_pass = st.text_input("New Password", type="password", key="f_pass")
+            if st.button("Update Password"):
+                if f_user in st.session_state.users_db:
+                    st.session_state.users_db[f_user] = f_pass
+                    st.success("Password updated successfully! You can now log in.")
+                else:
+                    st.error("Username not found.")
+    st.stop()
+
+# --- BACKEND MODEL LOADING ---
 SIMILARITY_URL = "https://github.com/SaniyaBanu17/cineflix/releases/download/type_v1.0/similarity.pkl"
 SIMILARITY_PATH = "similarity.pkl"
 
@@ -147,7 +202,7 @@ def search_all_columns(df, query):
     return results
 
 # --- NETFLIX HORIZONTAL NAVBAR ---
-nav1, nav2, nav3, nav4, nav5, nav6 = st.columns([1.5, 0.7, 0.8, 1.1, 1, 2])
+nav1, nav2, nav3, nav4, nav5, nav6, nav7 = st.columns([1.5, 0.7, 0.8, 1.1, 1, 1.1, 1.8])
 
 with nav1:
     st.markdown("<h1 class='main-title'>CINEFLIX</h1>", unsafe_allow_html=True)
@@ -160,6 +215,8 @@ with nav4:
 with nav5:
     if st.button(f"Watchlist ({len(st.session_state.watchlist)})"): st.session_state.current_page = "Watchlist"
 with nav6:
+    field_filter = st.selectbox("", ["All Fields", "Title", "Actor", "Director"], label_visibility="collapsed")
+with nav7:
     search_query = st.text_input("", placeholder="Search movies, actors, directors...", label_visibility="collapsed")
 
 st.markdown("<hr style='border-color: #282828; margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
@@ -202,28 +259,7 @@ elif search_query:
 elif st.session_state.current_page in ["Movies", "New & Popular"] or st.session_state.selected_genre != "All":
     st.markdown(f"<h2 class='section-header'>🎬 {st.session_state.current_page} - {st.session_state.selected_genre} Movies</h2>", unsafe_allow_html=True)
     
-    # Clean Genre Selector Bar
-    g1, g2, g3, g4, g5, g6, g7 = st.columns(7)
-    with g1: 
-        if st.button("All"): st.session_state.selected_genre = "All"
-    with g2: 
-        if st.button("Action"): st.session_state.selected_genre = "Action"
-    with g3: 
-        if st.button("Comedy"): st.session_state.selected_genre = "Comedy"
-    with g4: 
-        if st.button("Drama"): st.session_state.selected_genre = "Drama"
-    with g5: 
-        if st.button("Horror"): st.session_state.selected_genre = "Horror"
-    with g6: 
-        if st.button("Sci-Fi"): st.session_state.selected_genre = "Sci-Fi"
-    with g7: 
-        if st.button("Romance"): st.session_state.selected_genre = "Romance"
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Display Filtered Movies
     display_df = search_all_columns(movies, st.session_state.selected_genre) if st.session_state.selected_genre != "All" else movies.sample(n=12, random_state=42)
-    
     if display_df.empty:
         display_df = movies.sample(n=8, random_state=12)
 
@@ -241,10 +277,10 @@ elif st.session_state.current_page in ["Movies", "New & Popular"] or st.session_
                 st.success("Added!")
 
 else:
-    # --- CLEAN WHITE GENRES TEXT ROW ---
+    # --- CLEAN GENRES NAVIGATION ---
     st.markdown("""
-        <div style="display: flex; gap: 20px; font-weight: 600; font-size: 1rem; margin-bottom: 20px; color: #ffffff;">
-            <span>GENRES:</span>
+        <div style="display: flex; gap: 15px; font-weight: 600; font-size: 0.95rem; margin-bottom: 15px; color: #b3b3b3; align-items: center;">
+            <span style="color: #ffffff; font-weight: 700;">GENRES:</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -262,12 +298,13 @@ else:
     with gc6:
         if st.button("Romance"): st.session_state.selected_genre = "Romance"; st.rerun()
 
-    # --- HERO BANNER: INTERSTELLAR ---
+    # --- EXACT INTERSTELLAR HERO BANNER MATCHING SCREENSHOT ---
     st.markdown("""
         <div class='hero-box'>
-            <p style='color: #E50914; font-weight: 700; font-size: 0.9rem; margin-bottom: 0px;'>FEATURED MASTERPIECE</p>
-            <h1 style='font-size: 3.5rem; color: white; margin-top: 5px; margin-bottom: 10px; font-family: "Bebas Neue", cursive; letter-spacing: 2px;'>Interstellar</h1>
-            <p style='max-width: 600px; color: #dddddd; font-size: 0.95rem; line-height: 1.5;'>
+            <span style='background-color: #E50914; color: white; padding: 3px 6px; font-size: 0.75rem; font-weight: 700; border-radius: 3px;'>CF</span>
+            <span style='color: #ffffff; font-weight: 600; font-size: 0.85rem; letter-spacing: 1px; margin-left: 6px;'>SERIES • FEATURED</span>
+            <h1 style='font-size: 3.5rem; color: white; margin-top: 5px; margin-bottom: 8px; font-family: "Bebas Neue", cursive; letter-spacing: 2px;'>Interstellar</h1>
+            <p style='max-width: 580px; color: #dddddd; font-size: 0.95rem; line-height: 1.4;'>
                 When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history: traveling beyond this galaxy to discover whether mankind has a future among the stars.
             </p>
         </div>
@@ -279,12 +316,12 @@ else:
     if st.session_state.show_details:
         st.info("⭐ Interstellar (2014) | Rating: 8.6/10 | Director: Christopher Nolan\n\nEpic space adventure exploring gravity, time dilation, and survival.")
         st.video("https://www.youtube.com/watch?v=zSWdZVtXT7E")
-        st.markdown(f"<a href='https://www.themoviedb.org/movie/157336' target='_blank'><button style='background-color:#E50914;color:white;border-radius:4px;padding:8px 16px;border:none;font-weight:600;'>Watch on TMDB</button></a>", unsafe_allow_html=True)
+        st.markdown(f"<a href='https://www.themoviedb.org/movie/157336' target='_blank'><button style='background-color:#ffffff;color:#141414;border-radius:6px;padding:8px 16px;border:none;font-weight:600;'>Watch on TMDB</button></a>", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- HOMEPAGE CATEGORIES & RECOMMENDATIONS ---
-    st.markdown("<h3 class='section-header'>Recommended for You (Based on Activity)</h3>", unsafe_allow_html=True)
+    # --- HOMEPAGE GRIDS ---
+    st.markdown("<h3 class='section-header'>Recommended for user <span style='font-weight:400; font-size:0.8rem; color:#b3b3b3;'>(Based on your activity)</span></h3>", unsafe_allow_html=True)
     rec_sample = movies.sample(n=4, random_state=77)
     r_cols = st.columns(4)
     for idx, row in enumerate(rec_sample.iterrows()):
@@ -299,7 +336,7 @@ else:
                 st.session_state.watchlist.append({"title": m_title, "poster": poster, "link": link})
                 st.success("Added!")
 
-    st.markdown("<h3 class='section-header'>Trending & Popular Movies</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 class='section-header'>Trending & Recommended Movies</h3>", unsafe_allow_html=True)
     trend_sample = movies.sample(n=8, random_state=120)
     t_cols = st.columns(4)
     for idx, row in enumerate(trend_sample.iterrows()):
