@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 # GitHub Release download link for the large 176MB similarity.pkl file
-SIMILARITY_URL = "https://github.com/SaniyaBanu17/cineflix/releases/download/v1.0/similarity.pkl"
+SIMILARITY_URL = "https://github.com/SaniyaBanu17/cineflix/releases/download/type_v1.0/similarity.pkl"
 SIMILARITY_PATH = "similarity.pkl"
 
 # Auto-download similarity.pkl securely if missing or empty
