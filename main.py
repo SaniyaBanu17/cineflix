@@ -5,9 +5,9 @@ import pandas as pd
 import streamlit as st
 
 # Page Configuration (Wide layout)
-st.set_page_config(page_title="Cineflix - Ultimate Movie Recommendation System", page_icon="🎬", layout="wide")
+st.set_page_config(page_title="Cineflix - Watch & Discover", page_icon="🎬", layout="wide")
 
-# --- CUSTOM NETFLIX BLACK & RED THEME CSS ---
+# --- CUSTOM NETFLIX THEME CSS ---
 st.markdown("""
     <style>
     .stApp {
@@ -17,18 +17,17 @@ st.markdown("""
     .main-title {
         color: #E50914;
         font-weight: 800;
-        font-size: 2.5rem;
-        letter-spacing: 2px;
+        font-size: 2rem;
+        letter-spacing: 1px;
         margin: 0;
     }
-    .nav-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background-color: #141414;
-        padding: 10px 0px;
-        border-bottom: 1px solid #282828;
-        margin-bottom: 20px;
+    .hero-box {
+        background: linear-gradient(180deg, rgba(20,20,20,0.2) 0%, rgba(20,20,20,1) 100%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo6LEuPJ19zB.jpg');
+        background-size: cover;
+        background-position: center;
+        padding: 45px;
+        border-radius: 8px;
+        margin-bottom: 25px;
     }
     .stButton>button {
         background-color: #E50914;
@@ -43,75 +42,38 @@ st.markdown("""
         background-color: #f40612;
         color: white;
     }
-    .hero-box {
-        background: linear-gradient(180deg, rgba(20,20,20,0.2) 0%, rgba(20,20,20,1) 100%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo6LEuPJ19zB.jpg');
-        background-size: cover;
-        background-position: center;
-        padding: 50px;
-        border-radius: 8px;
-        margin-bottom: 30px;
-    }
     .card-title {
         text-align: center;
         font-weight: 700;
-        font-size: 0.95rem;
-        margin-top: 8px;
+        font-size: 0.9rem;
+        margin-top: 6px;
         color: #ffffff;
     }
     .card-info {
         text-align: center;
         color: #b3b3b3;
-        font-size: 0.8rem;
-        margin-bottom: 5px;
-    }
-    .movie-desc {
-        background-color: #1f1f1f;
-        padding: 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        color: #cccccc;
-        margin-bottom: 8px;
-        min-height: 70px;
+        font-size: 0.75rem;
+        margin-bottom: 4px;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # --- SESSION STATE INITIALIZATION ---
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
 if "watchlist" not in st.session_state:
     st.session_state.watchlist = []
 if "current_page" not in st.session_state:
     st.session_state.current_page = "Home"
 if "selected_genre" not in st.session_state:
     st.session_state.selected_genre = "All"
-if "show_info" not in st.session_state:
-    st.session_state.show_info = False
-if "show_trailer" not in st.session_state:
-    st.session_state.show_trailer = False
-
-# --- LOGIN SCREEN ---
-if not st.session_state.logged_in:
-    st.markdown("<h1 style='color: #E50914; text-align: center;'>🎬 CF CINEFLIX</h1>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col2:
-        st.markdown("### Sign In")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        if st.button("Login"):
-            if username and password:
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.warning("Please enter your credentials.")
-    st.stop()
+if "show_details" not in st.session_state:
+    st.session_state.show_details = False
 
 # --- BACKEND MODEL LOADING ---
 SIMILARITY_URL = "https://github.com/SaniyaBanu17/cineflix/releases/download/type_v1.0/similarity.pkl"
 SIMILARITY_PATH = "similarity.pkl"
 
 if not os.path.exists(SIMILARITY_PATH) or os.path.getsize(SIMILARITY_PATH) < 1000000:
-    with st.spinner("Loading Cineflix recommendation matrices (~176MB)..."):
+    with st.spinner("Loading recommendation matrices (~176MB)..."):
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(SIMILARITY_URL, headers=headers, stream=True)
         if response.status_code == 200:
@@ -151,63 +113,32 @@ def fetch_movie_details(movie_id):
     except Exception:
         return "https://via.placeholder.com/500x750?text=No+Image", "Description unavailable.", "2014", 8.5, f"https://www.themoviedb.org/movie/{movie_id}"
 
-def recommend(movie_title):
-    try:
-        match_idx = movies[movies['title'].str.lower() == movie_title.lower()].index
-        if len(match_idx) == 0:
-            match_idx = movies[movies['title'].str.contains(movie_title, case=False, na=False)].index
-        if len(match_idx) == 0:
-            return [], [], [], [], [], []
-        
-        movie_index = match_idx[0]
-        distances = similarity[movie_index]
-        movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
+# --- NETFLIX HORIZONTAL NAVBAR ---
+nav1, nav2, nav3, nav4, nav5, nav6, nav7 = st.columns([1.5, 0.7, 0.7, 1.1, 0.9, 1.1, 1.8])
 
-        titles, posters, overviews, metadata, links, ids = [], [], [], [], [], []
-        for i in movies_list:
-            m_id = movies.iloc[i[0]].movie_id
-            m_title = movies.iloc[i[0]].title
-            poster, overview, year, rating, link = fetch_movie_details(m_id)
-            titles.append(m_title)
-            posters.append(poster)
-            overviews.append(overview)
-            metadata.append(f"{year} | ⭐ {rating}/10")
-            links.append(link)
-            ids.append(m_id)
-        return titles, posters, overviews, metadata, links, ids
-    except Exception:
-        return [], [], [], [], [], []
-
-# --- HORIZONTAL NETFLIX NAVIGATION BAR ---
-col_logo, col_home, col_movies, col_new, col_watchlist, col_search = st.columns([1.2, 0.8, 0.9, 1.2, 1, 1.8])
-
-with col_logo:
-    st.markdown("<h2 class='main-title'>🎬 CF</h2>", unsafe_allow_html=True)
-with col_home:
-    if st.button("Home"):
-        st.session_state.current_page = "Home"
-        st.session_state.selected_genre = "All"
-with col_movies:
-    if st.button("Movies"):
-        st.session_state.current_page = "Movies"
-with col_new:
-    if st.button("New & Popular"):
-        st.session_state.current_page = "New & Popular"
-with col_watchlist:
-    if st.button(f"Watchlist ({len(st.session_state.watchlist)})"):
-        st.session_state.current_page = "Watchlist"
-with col_search:
+with nav1:
+    st.markdown("<h1 class='main-title'>CINEFLIX</h1>", unsafe_allow_html=True)
+with nav2:
+    if st.button("Home"): st.session_state.current_page = "Home"
+with nav3:
+    if st.button("Movies"): st.session_state.current_page = "Movies"
+with nav4:
+    if st.button("New & Popular"): st.session_state.current_page = "New & Popular"
+with nav5:
+    if st.button(f"Watchlist ({len(st.session_state.watchlist)})"): st.session_state.current_page = "Watchlist"
+with nav6:
+    field_filter = st.selectbox("", ["All Fields", "Title", "Actor", "Director"], label_visibility="collapsed")
+with nav7:
     search_query = st.text_input("", placeholder="Search movies, actors, directors...", label_visibility="collapsed")
 
 st.markdown("---")
 
-# --- RENDER PAGES ACCORDING TO NAVIGATION ---
+# --- ROUTING PAGES ---
 
-# 1. WATCHLIST PAGE
 if st.session_state.current_page == "Watchlist":
     st.markdown("## 📌 My Watchlist")
     if len(st.session_state.watchlist) == 0:
-        st.info("Your watchlist is empty. Add movies from recommendations!")
+        st.info("Your watchlist is empty.")
     else:
         w_cols = st.columns(min(len(st.session_state.watchlist), 5))
         for idx, item in enumerate(st.session_state.watchlist):
@@ -218,119 +149,95 @@ if st.session_state.current_page == "Watchlist":
                     st.session_state.watchlist.pop(idx)
                     st.rerun()
 
-# 2. MOVIES / GENRES PAGE
-elif st.session_state.current_page in ["Movies", "New & Popular"] or st.session_state.selected_genre != "All":
-    st.markdown("## 🎭 Explore Categories & Genres")
-    
-    # Genre Selection Horizontal Buttons
-    g_col1, g_col2, g_col3, g_col4, g_col5, g_col6, g_col7 = st.columns(7)
-    with g_col1:
-        if st.button("All"): st.session_state.selected_genre = "All"
-    with g_col2:
-        if st.button("Action"): st.session_state.selected_genre = "Action"
-    with g_col3:
-        if st.button("Comedy"): st.session_state.selected_genre = "Comedy"
-    with g_col4:
-        if st.button("Drama"): st.session_state.selected_genre = "Drama"
-    with g_col5:
-        if st.button("Horror"): st.session_state.selected_genre = "Horror"
-    with g_col6:
-        if st.button("Sci-Fi"): st.session_state.selected_genre = "Sci-Fi"
-    with g_col7:
-        if st.button("Romance"): st.session_state.selected_genre = "Romance"
-        
-    st.markdown(f"### Showing Category: {st.session_state.selected_genre}")
-    
-    cat_movies = movies.sample(n=min(10, len(movies)), random_state=42)
-    c_cols = st.columns(5)
-    for idx, row in enumerate(cat_movies.iterrows()):
-        m_id = row[1].movie_id
-        m_title = row[1].title
-        poster, overview, year, rating, link = fetch_movie_details(m_id)
-        with c_cols[idx % 5]:
-            st.image(poster, use_column_width=True)
-            st.markdown(f"<p class='card-title'>{m_title}</p>", unsafe_allow_html=True)
-            st.markdown(f"<p class='card-info'>{year} | ⭐ {rating}/10</p>", unsafe_allow_html=True)
-            if st.button("➕ Watchlist", key=f"cat_add_{idx}"):
-                st.session_state.watchlist.append({"title": m_title, "poster": poster, "link": link})
-                st.success("Added!")
-
-# 3. SEARCH RESULTS (IF SEARCH QUERY ENTERED)
 elif search_query:
-    st.markdown(f"### 🔍 Search Results for: *{search_query}*")
+    st.markdown(f"### Search Results for: *{search_query}*")
     mask = movies['title'].str.contains(search_query, case=False, na=False)
-    matched_df = movies[mask].head(5)
+    matched_df = movies[mask].head(8)
     if not matched_df.empty:
-        s_cols = st.columns(min(len(matched_df), 5))
+        s_cols = st.columns(4)
         for idx, row in enumerate(matched_df.iterrows()):
             m_id = row[1].movie_id
             m_title = row[1].title
             poster, overview, year, rating, link = fetch_movie_details(m_id)
-            with s_cols[idx]:
+            with s_cols[idx % 4]:
                 st.image(poster, use_column_width=True)
                 st.markdown(f"<p class='card-title'>{m_title}</p>", unsafe_allow_html=True)
                 st.markdown(f"<p class='card-info'>{year} | ⭐ {rating}/10</p>", unsafe_allow_html=True)
                 st.markdown(f"<a href='{link}' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:5px;border-radius:4px;width:100%;'>▶ Watch on TMDB</button></a>", unsafe_allow_html=True)
     else:
-        st.info("No matching movies found in database.")
+        st.info("No matching movies found.")
 
-# 4. HOME PAGE (DEFAULT)
 else:
-    # HERO BANNER: INTERSTELLAR
-    st.markdown("""
-        <div class='hero-box'>
-            <h1 style='font-size: 3.2rem; color: white; margin-bottom: 5px;'>INTERSTELLAR</h1>
-            <p style='color: #46d369; font-weight: bold; font-size: 1.1rem;'>2014 | ⭐ 8.6/10 | Sci-Fi, Adventure, Drama</p>
-            <p style='max-width: 650px; color: #ddd; font-size: 1rem;'>
-                When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft, along with a team of researchers, to find a new planet for humans.
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
+    # --- GENRES HORIZONTAL BAR ---
+    st.markdown("### **GENRES:** &nbsp;&nbsp;&nbsp; " + " &nbsp;&nbsp;&nbsp; ".join([f"**{g}**" for g in ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Romance"]]))
     
-    # Hero Action Buttons (Play Trailer & Info)
-    h_col1, h_col2, h_col3 = st.columns([1, 1, 3])
-    with h_col1:
-        if st.button("▶ Play Trailer"):
-            st.session_state.show_trailer = not st.session_state.show_trailer
-    with h_col2:
-        if st.button("ℹ️ Info"):
-            st.session_state.show_info = not st.session_state.show_info
-
-    # Toggle Info or Trailer display for Interstellar
-    if st.session_state.show_trailer:
-        st.video("https://www.youtube.com/watch?v=zSWdZVtXT7E")
-    if st.session_state.show_info:
-        st.info("Interstellar (2014) directed by Christopher Nolan. Cast: Matthew McConaughey, Anne Hathaway, Jessica Chastain. Epic space-time exploration masterpiece.")
+    genre_col1, genre_col2, genre_col3, genre_col4, genre_col5, genre_col6 = st.columns(6)
+    with genre_col1: 
+        if st.button("Action Genre"): st.session_state.selected_genre = "Action"
+    with genre_col2: 
+        if st.button("Comedy Genre"): st.session_state.selected_genre = "Comedy"
+    with genre_col3: 
+        if st.button("Drama Genre"): st.session_state.selected_genre = "Drama"
+    with genre_col4: 
+        if st.button("Horror Genre"): st.session_state.selected_genre = "Horror"
+    with genre_col5: 
+        if st.button("Sci-Fi Genre"): st.session_state.selected_genre = "Sci-Fi"
+    with genre_col6: 
+        if st.button("Romance Genre"): st.session_state.selected_genre = "Romance"
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # MAIN RECOMMENDATION INPUT ROW
-    movie_list = movies['title'].values if 'title' in movies.columns else []
-    r_col1, r_col2 = st.columns([3, 1])
-    with r_col1:
-        selected_movie = st.selectbox("Select or search a movie for recommendations:", movie_list)
-    with r_col2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        rec_btn = st.button("Show Recommendations")
+    # --- HERO BANNER: INTERSTELLAR ---
+    st.markdown("""
+        <div class='hero-box'>
+            <p style='color: #E50914; font-weight: bold; font-size: 0.9rem; margin-bottom: 0px;'>CF SERIES • FEATURED</p>
+            <h1 style='font-size: 3rem; color: white; margin-top: 5px; margin-bottom: 5px;'>Interstellar</h1>
+            <p style='max-width: 620px; color: #ddd; font-size: 0.95rem;'>
+                When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history: traveling beyond this galaxy to discover whether mankind has a future among the stars.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # RECOMMENDATIONS GRID DISPLAY
-    if rec_btn or selected_movie:
-        with st.spinner("Fetching recommended movies based on your activity..."):
-            names, posters, overviews, metadata, links, ids = recommend(selected_movie)
-            if names:
-                st.markdown(f"### Recommended for You (Based on *{selected_movie}*)")
-                cols = st.columns(5)
-                for idx, col in enumerate(cols):
-                    with col:
-                        st.image(posters[idx], use_column_width=True)
-                        st.markdown(f"<p class='card-title'>{names[idx]}</p>", unsafe_allow_html=True)
-                        st.markdown(f"<p class='card-info'>{metadata[idx]}</p>", unsafe_allow_html=True)
-                        st.markdown(f"<div class='movie-desc'>{overviews[idx]}</div>", unsafe_allow_html=True)
-                        
-                        # Add to Watchlist
-                        if st.button("➕ Add to Watchlist", key=f"home_add_{idx}"):
-                            st.session_state.watchlist.append({"title": names[idx], "poster": posters[idx], "link": links[idx]})
-                            st.success("Added!")
-                        
-                        # Watch on TMDB
-                        st.markdown(f"<a href='{links[idx]}' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:6px;border-radius:4px;width:100%;font-weight:bold;margin-top:5px;'>▶ Watch on TMDB</button></a>", unsafe_allow_html=True)
+    # Play Trailer & Info Button
+    if st.button("▶ Play Trailer & Info"):
+        st.session_state.show_details = not st.session_state.show_details
+
+    if st.session_state.show_details:
+        st.info("⭐ Interstellar (2014) | Rating: 8.6/10 | Director: Christopher Nolan\n\nEpic space adventure exploring gravity, time dilation, and survival.")
+        st.video("https://www.youtube.com/watch?v=zSWdZVtXT7E")
+        st.markdown(f"<a href='https://www.themoviedb.org/movie/157336' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:8px;border-radius:4px;width:200px;'>Watch on TMDB</button></a>", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # --- RECOMMENDED FOR ADMIN SECTION ---
+    st.markdown("### Recommended for **admin** <span style='font-size:0.8rem; color:#b3b3b3;'>(Based on your activity)</span>", unsafe_allow_html=True)
+    
+    rec_sample = movies.sample(n=4, random_state=101)
+    r_cols = st.columns(4)
+    for idx, row in enumerate(rec_sample.iterrows()):
+        m_id = row[1].movie_id
+        m_title = row[1].title
+        poster, overview, year, rating, link = fetch_movie_details(m_id)
+        with r_cols[idx]:
+            st.image(poster, use_column_width=True)
+            st.markdown(f"<p class='card-title'>{m_title}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p class='card-info'>{year} | ⭐ {rating}/10</p>", unsafe_allow_html=True)
+            if st.button("➕ Watchlist", key=f"rec_{idx}"):
+                st.session_state.watchlist.append({"title": m_title, "poster": poster, "link": link})
+                st.success("Added!")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # --- TRENDING & RECOMMENDED MOVIES SECTION ---
+    st.markdown("### Trending & Recommended Movies", unsafe_allow_html=True)
+    trend_sample = movies.sample(n=8, random_state=202)
+    t_cols = st.columns(4)
+    for idx, row in enumerate(trend_sample.iterrows()):
+        m_id = row[1].movie_id
+        m_title = row[1].title
+        poster, overview, year, rating, link = fetch_movie_details(m_id)
+        with t_cols[idx % 4]:
+            st.image(poster, use_column_width=True)
+            st.markdown(f"<p class='card-title'>{m_title}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p class='card-info'>{year} | ⭐ {rating}/10</p>", unsafe_allow_html=True)
+            st.markdown(f"<a href='{link}' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:5px;border-radius:4px;width:100%;margin-top:4px;'>▶ TMDB / Watch</button></a>", unsafe_allow_html=True)
