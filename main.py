@@ -10,6 +10,20 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
 from functools import lru_cache
+import os
+import requests
+import streamlit as st
+
+SIMILARITY_URL = "sha256:bb74e1b7a1b40f4c0195a2647eb9cf9d5285c50c9d0c22590d42299521d09f89"
+SIMILARITY_PATH = "similarity.pkl"
+
+if not os.path.exists(SIMILARITY_PATH):
+  with st.spinner(
+      "Downloading model files (~176MB)... Please wait a moment."
+  ):
+    response = requests.get(SIMILARITY_URL)
+    with open(SIMILARITY_PATH, "wb") as f:
+      f.write(response.content)
 
 app = FastAPI(title="Cineflix Recommendation API")
 
