@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cineflix - Watch & Discover</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::-webkit-scrollbar { height: 8px; }
+    ::-webkit-scrollbar-track { background: #141414; }
+    ::-webkit-scrollbar-thumb { background: #e50914; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-[#141414] text-white min-h-screen font-sans antialiased selection:bg-[#e50914] selection:text-white pt-20">
+
+  <!-- Navbar -->
+  <nav class="flex items-center justify-between px-8 py-4 bg-black/80 backdrop-blur-md fixed top-0 w-full z-50 border-b border-zinc-800">
+    <div class="flex items-center gap-6">
+      <span class="text-red-600 font-extrabold text-2xl tracking-widest cursor-pointer" onclick="loadCategory('popular', 'Home Feed')">CINEFLIX</span>
+      <div class="hidden md:flex gap-6 text-sm text-zinc-300 font-medium">
+        <a href="#" onclick="loadCategory('popular', 'Home Feed'); return false;" class="text-white hover:text-zinc-300 transition">Home</a>
+        <a href="#" onclick="loadCategory('catalog', 'Movie Catalog'); return false;" class="hover:text-zinc-300 transition">Movies</a>
+        <a href="#" onclick="loadCategory('popular', 'New & Popular'); return false;" class="hover:text-zinc-300 transition">New & Popular</a>
+        <a href="#" onclick="loadWatchlist(); return false;" class="hover:text-zinc-300 transition text-[#e50914] font-semibold">Watchlist</a>  
+      </div>
+    </div>
+    
+    <!-- Search Bar with Filter Dropdown -->
+    <div class="flex items-center gap-2">
+      <select id="searchFilter" class="bg-zinc-900 text-zinc-300 text-xs rounded-full px-3 py-2 border border-zinc-700 focus:outline-none focus:border-[#e50914] transition">
+        <option value="all">All Fields</option>
+        <option value="title">Title Only</option>
+        <option value="genre">By Genre</option>
+        <option value="cast">Actor / Director</option>
+      </select>
+
+      <div class="relative flex items-center">
+        <input 
+          id="movieInput" 
+          type="text" 
+          placeholder="Search movies, actors, directors..." 
+          onkeydown="if(event.key === 'Enter') { getRecommendations(); closeDropdown(); }"
+          autocomplete="off"
+          class="bg-zinc-900 text-white placeholder-zinc-500 text-sm rounded-full pl-4 pr-10 py-2 w-64 border border-zinc-700 focus:outline-none focus:border-[#e50914] transition-all"
+        />
+        <button type="button" onclick="getRecommendations(); closeDropdown();" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-sm cursor-pointer z-20">🔍</button>
+        
+        <!-- Autocomplete Dropdown Box -->
+        <div id="autocompleteDropdown" class="absolute top-12 left-0 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl hidden z-50 overflow-hidden"></div>
+      </div>
+
+      <button id="navAuthBtn" onclick="openAuthModal()" class="ml-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-full transition cursor-pointer">
+        Login
+      </button>
+    </div>
+  </nav>
+
+  <!-- Featured Movie Banner -->
+  <div id="featuredBanner" class="relative w-full h-[500px] bg-cover bg-center flex items-center px-12 rounded-xl overflow-hidden mb-8 shadow-2xl mx-auto max-w-7xl mt-4" style="background-image: linear-gradient(to right, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.3) 70%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg');">
+    <div class="max-w-xl z-10">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="bg-red-600 text-white font-black px-2 py-0.5 text-xs rounded tracking-widest shadow">CF</span>
+        <span class="text-zinc-300 tracking-widest text-xs font-semibold uppercase">SERIES • FEATURED</span>
+      </div>
+
+      <h1 class="text-5xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg">Interstellar</h1>
+      <p class="text-zinc-200 text-sm mb-6 line-clamp-3 leading-relaxed drop-shadow">When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history: traveling beyond this galaxy to discover whether mankind has a future among the stars.</p>
+      
+      <div class="flex items-center gap-4">
+        <button onclick="openMovieModal({title: 'Interstellar', overview: 'When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history...', rating: 8.6, year: '2014', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'})" class="bg-white hover:bg-zinc-200 text-black font-semibold px-6 py-2.5 rounded flex items-center gap-2 transition shadow-lg cursor-pointer">
+          <span>▶️</span> Play Trailer & Info
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Genre Filter Pills -->
+  <div class="px-8 max-w-7xl mx-auto flex flex-wrap gap-2.5 mb-8">
+    <span class="text-zinc-400 text-xs font-bold uppercase tracking-wider self-center mr-2">Genres:</span>
+    <button onclick="filterByGenre('Action')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Action</button>
+    <button onclick="filterByGenre('Comedy')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Comedy</button>
+    <button onclick="filterByGenre('Drama')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Drama</button>
+    <button onclick="filterByGenre('Horror')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Horror</button>
+    <button onclick="filterByGenre('Sci-Fi')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Sci-Fi</button>
+    <button onclick="filterByGenre('Romance')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Romance</button>
+  </div>
+
+  <!-- Content Container -->
+  <main class="px-8 max-w-7xl mx-auto pb-20">
+    <div id="statusMessage" class="hidden text-zinc-400 text-base mb-6 animate-pulse"></div>
+
+    <!-- Personalized Recommendations Row -->
+    <div id="personalizedSection" class="hidden mb-10">
+      <h3 class="text-lg font-bold text-white mb-4">
+        Recommended for <span id="personalizedUsername" class="text-red-500">You</span> 
+        <span class="text-xs font-normal text-zinc-400 ml-2">(Based on your activity)</span>
+      </h3>
+      <div id="personalizedGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
+    </div>
+
+    <div id="resultsSection" class="space-y-8">
+      <div>
+        <h3 class="text-lg font-bold text-white mb-4"><span id="queryTitle" class="text-[#e50914]">Trending & Recommended Movies</span></h3>
+        <div id="recommendationsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Auth Overlay Modal -->
+  <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative text-white">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-zinc-400 hover:text-white">✕</button>
+      <h2 id="authTitle" class="text-3xl font-bold text-red-600 mb-2 text-center">Login to Cineflix</h2>
+      <p id="authSubtitle" class="text-gray-400 text-sm mb-6 text-center">Welcome back! Please enter your details.</p>
+      
+      <div id="authAlert" class="hidden mb-4 p-3 rounded text-sm text-center"></div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Username</label>
+          <input type="text" id="authUsername" required placeholder="Enter username" 
+                 class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+        </div>
+
+        <div id="passwordFieldGroup">
+          <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Password</label>
+          <input type="password" id="authPassword" placeholder="Enter password" oninput="checkPasswordSafety(this.value)"
+                 class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+          <p id="passwordHint" class="text-xs text-yellow-400 mt-1 hidden">⚠️ Safety Hint: Password should be at least 6 characters long.</p>
+        </div>
+
+        <div id="forgotPasswordFields" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Security Question: Favorite Movie?</label>
+            <input type="text" id="authSecurityAnswer" placeholder="e.g. Avatar" 
+                   class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+          </div>
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">New Password</label>
+            <input type="password" id="authNewPassword" placeholder="Enter new password" 
+                   class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+          </div>
+        </div>
+
+        <button type="submit" id="authSubmitBtn" class="w-full bg-red-600 hover:bg-red-700 py-2.5 rounded font-semibold transition cursor-pointer">
+          Log In
+        </button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-gray-400 flex justify-between items-center">
+        <button type="button" onclick="toggleAuthMode()" id="toggleModeBtn" class="hover:text-white underline cursor-pointer">
+          Don't have an account? Sign Up
+        </button>
+        <button type="button" onclick="showForgotPassword()" id="forgotBtn" class="hover:text-red-400 text-xs cursor-pointer">
+          Forgot Password?
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movie Details Modal -->
+  <div id="movieModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 text-white rounded-xl p-6 relative border border-zinc-800 shadow-2xl flex flex-col md:flex-row gap-6 max-w-2xl w-full">
+      <button onclick="closeMovieModal()" class="absolute top-4 right-4 text-zinc-400 hover:text-white bg-zinc-800 rounded-full w-8 h-8 flex items-center justify-center cursor-pointer z-10">
+        ✕
+      </button>
+
+      <img id="modalPoster" src="" alt="Poster" class="w-40 h-60 object-cover rounded-lg shadow-md bg-zinc-800 shrink-0 mx-auto md:mx-0">
+
+      <div class="flex flex-col justify-between flex-1">
+        <div class="space-y-3">
+          <h2 id="modalTitle" class="text-2xl font-bold text-white pr-8"></h2>
+          <div class="flex items-center gap-3 text-xs text-zinc-400">
+            <span id="modalRating" class="bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded font-semibold">★ 7.5</span>
+            <span id="modalYear">2023</span>
+          </div>
+          <p id="modalOverview" class="text-xs text-zinc-300 leading-relaxed max-h-36 overflow-y-auto pr-1">Loading description...</p>
+        </div>
+        
+        <!-- Action Buttons inside Modal -->
+        <div class="flex flex-wrap items-center gap-3 mt-6 pt-4 border-t border-zinc-800">
+          <button id="modalTrailerBtn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded flex items-center gap-1.5 transition cursor-pointer">
+            <span>▶️</span> Watch Trailer
+          </button>
+
+          <button id="watchlistBtn" onclick="toggleWatchlist()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold px-4 py-2 rounded border border-zinc-700 flex items-center gap-1.5 transition cursor-pointer">
+            <span id="watchlistBtnText">+ Add to Watchlist</span>
+          </button>
+
+          <button id="modalTmdbBtn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold px-3 py-2 rounded border border-zinc-700 transition cursor-pointer">
+            Watch on TMDB
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    let currentMode = 'login';
+    let currentSelectedMovie = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = localStorage.getItem('cineflixUser');
+      if (user) {
+        updateNavUser(user);
+        loadPersonalizedFeed();
+      }
+      loadCategory('popular', 'Trending & Recommended Movies');
+    });
+
+    function openAuthModal() {
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function updateNavUser(username) {
+      const btn = document.getElementById('navAuthBtn');
+      if (btn) {
+        btn.innerText = `Logout (${username})`;
+        btn.onclick = () => {
+          localStorage.removeItem('cineflixUser');
+          location.reload();
+        };
+      }
+    }
+
+    // Tracks user genre preferences in localStorage
+    function trackUserGenrePreference(genre) {
+      if (!genre) return;
+      const user = localStorage.getItem('cineflixUser');
+      if (!user) return;
+
+      let prefs = JSON.parse(localStorage.getItem(`prefs_${user}`)) || {};
+      prefs[genre] = (prefs[genre] || 0) + 1;
+      localStorage.setItem(`prefs_${user}`, JSON.stringify(prefs));
+      
+      loadPersonalizedFeed();
+    }
+
+    // Fetches and renders personalized recommendations for active user
+    async function loadPersonalizedFeed() {
+      const user = localStorage.getItem('cineflixUser');
+      const section = document.getElementById('personalizedSection');
+      const grid = document.getElementById('personalizedGrid');
+      const nameEl = document.getElementById('personalizedUsername');
+
+      if (!user || !section || !grid) return;
+
+      let prefs = JSON.parse(localStorage.getItem(`prefs_${user}`)) || {};
+      let topGenre = Object.keys(prefs).reduce((a, b) => prefs[a] > prefs[b] ? a : b, null);
+
+      if (!topGenre) topGenre = 'Action';
+      if (nameEl) nameEl.innerText = user;
+
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(topGenre)}&filter=genre`);
+        const data = await response.json();
+
+        if (data.movies && data.movies.length > 0) {
+          grid.innerHTML = '';
+          data.movies.slice(0, 5).forEach(movie => {
+            const card = document.createElement('div');
+            card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+            card.onclick = () => openMovieModal(movie);
+
+            const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+
+            card.innerHTML = `
+              <div class="aspect-[2/3] w-full overflow-hidden">
+                <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+                <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Recommended</span>
+              </div>
+            `;
+            grid.appendChild(card);
+          });
+          section.classList.remove('hidden');
+        }
+      } catch (err) {
+        console.log('Personalized feed error:', err);
+      }
+    }
+
+    function checkPasswordSafety(val) {
+      const hint = document.getElementById('passwordHint');
+      if (val.length > 0 && val.length < 6) {
+        hint.classList.remove('hidden');
+      } else {
+        hint.classList.add('hidden');
+      }
+    }
+
+    function closeDropdown() {
+      const dropdown = document.getElementById('autocompleteDropdown');
+      if (dropdown) dropdown.classList.add('hidden');
+    }
+
+    function openMovieModal(movie) {
+      let title = "Untitled";
+      let poster = "";
+      let overview = "";
+      let rating = "7.5";
+      let year = "2023";
+      let tmdbId = null;
+
+      if (typeof movie === 'string') {
+        title = movie;
+        overview = `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
+      } else if (movie && typeof movie === 'object') {
+        title = movie.title || movie.name || movie.original_title || "Untitled";
+        
+        poster = movie.poster || movie.poster_path || movie.image || "";
+        if (poster && poster.startsWith('/')) {
+          poster = 'https://image.tmdb.org/t/p/w500' + poster;
+        }
+
+        const rawOverview = movie.overview || movie.plot || movie.description || movie.summary || movie.tagline || "";
+        if (rawOverview && rawOverview !== 'nan' && rawOverview.trim() !== '') {
+          overview = rawOverview;
+        } else {
+          overview = `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
+        }
+        
+        const rawRating = movie.vote_average ?? movie.rating ?? movie.score;
+        if (rawRating !== undefined && rawRating !== null && rawRating !== "N/A" && !isNaN(rawRating)) {
+          rating = typeof rawRating === 'number' ? rawRating.toFixed(1) : rawRating;
+        }
+
+        const rawDate = movie.release_date || movie.year || movie.releaseDate || "";
+        if (rawDate && rawDate !== 'nan') {
+          year = String(rawDate).substring(0, 4);
+        }
+        tmdbId = movie.id || movie.movie_id || null;
+      }
+
+      currentSelectedMovie = { title, poster, overview, rating, year, id: tmdbId };
+
+      document.getElementById('modalTitle').innerText = title;
+      const posterEl = document.getElementById('modalPoster');
+      if (posterEl) posterEl.src = poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Poster';
+
+      document.getElementById('modalOverview').innerText = overview;
+      document.getElementById('modalRating').innerText = `★ ${rating}`;
+      document.getElementById('modalYear').innerText = year;
+
+      updateWatchlistButtonState();
+
+      document.getElementById('modalTrailerBtn').onclick = () => {
+        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' official trailer')}`, '_blank');
+      };
+
+      document.getElementById('modalTmdbBtn').onclick = () => {
+        const targetUrl = tmdbId 
+          ? `https://www.themoviedb.org/movie/${tmdbId}`
+          : `https://www.themoviedb.org/search?query=${encodeURIComponent(title)}`;
+        window.open(targetUrl, '_blank');
+      };
+
+      document.getElementById('movieModal').classList.remove('hidden');
+    }
+
+    function closeMovieModal() {
+      document.getElementById('movieModal').classList.add('hidden');
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('movieModal');
+      if (event.target === modal) {
+        closeMovieModal();
+      }
+    };
+
+    function toggleWatchlist() {
+      if (!currentSelectedMovie) return;
+
+      let watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
+      const index = watchlist.findIndex(m => m.title === currentSelectedMovie.title);
+
+      if (index > -1) {
+        watchlist.splice(index, 1);
+      } else {
+        watchlist.push(currentSelectedMovie);
+      }
+
+      localStorage.setItem('cineflix_watchlist', JSON.stringify(watchlist));
+      updateWatchlistButtonState();
+    }
+
+    function updateWatchlistButtonState() {
+      if (!currentSelectedMovie) return;
+      let watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
+      const exists = watchlist.some(m => m.title === currentSelectedMovie.title);
+      
+      const btnText = document.getElementById('watchlistBtnText');
+      const btn = document.getElementById('watchlistBtn');
+      
+      if (!btn || !btnText) return;
+
+      if (exists) {
+        btnText.innerText = "✓ In Watchlist";
+        btn.classList.add('bg-red-600', 'border-red-600');
+        btn.classList.remove('bg-zinc-800', 'border-zinc-700');
+      } else {
+        btnText.innerText = "+ Add to Watchlist";
+        btn.classList.remove('bg-red-600', 'border-red-600');
+        btn.classList.add('bg-zinc-800', 'border-zinc-700');
+      }
+    }
+
+    function loadWatchlist() {
+      const watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
+      const grid = document.getElementById('recommendationsGrid');
+      const queryTitle = document.getElementById('queryTitle');
+      const status = document.getElementById('statusMessage');
+
+      status.classList.add('hidden');
+      if (queryTitle) queryTitle.innerText = "My Watchlist";
+      grid.innerHTML = '';
+
+      if (watchlist.length === 0) {
+        status.classList.remove('hidden');
+        status.innerText = "Your Watchlist is currently empty. Explore movies and click 'Add to Watchlist' to save them here!";
+        return;
+      }
+
+      watchlist.forEach(movie => {
+        const card = document.createElement('div');
+        card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+        card.onclick = () => openMovieModal(movie);
+
+        card.innerHTML = `
+          <div class="aspect-[2/3] w-full overflow-hidden">
+            <img src="${movie.poster}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/500x750/141414/ffffff?text=No+Image'">
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+            <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+            <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Manage Watchlist</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function filterByGenre(genreName) {
+      trackUserGenrePreference(genreName);
+
+      const grid = document.getElementById('recommendationsGrid');
+      const status = document.getElementById('statusMessage');
+      const queryTitle = document.getElementById('queryTitle');
+      const movieInput = document.getElementById('movieInput');
+
+      if (movieInput) movieInput.value = '';
+      if (queryTitle) queryTitle.innerText = `${genreName} Movies`;
+      
+      grid.innerHTML = '';
+      status.classList.remove('hidden');
+      status.innerText = `Loading ${genreName} movies...`;
+
+      let queryTerm = genreName.toLowerCase();
+      if (queryTerm === 'sci-fi') queryTerm = 'science fiction';
+
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(queryTerm)}&filter=genre`);
+        const data = await response.json();
+
+        status.classList.add('hidden');
+
+        if (!data.movies || data.movies.length === 0) {
+          status.classList.remove('hidden');
+          status.innerText = `No movies found for ${genreName}.`;
+          return;
+        }
+
+        data.movies.forEach(movie => {
+          const card = document.createElement('div');
+          card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+          card.onclick = () => openMovieModal(movie);
+
+          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+
+          card.innerHTML = `
+            <div class="aspect-[2/3] w-full overflow-hidden">
+              <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+              <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+              <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Play Trailer & Info</span>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        status.classList.remove('hidden');
+        status.innerText = 'Failed to load genre movies.';
+      }
+    }
+
+    async function getRecommendations() {
+      const rawInput = document.getElementById('movieInput').value.trim();
+      const input = rawInput.replace(/["']/g, '');
+      const filterSelect = document.getElementById('searchFilter');
+      const filter = filterSelect ? filterSelect.value : 'all';
+      
+      const grid = document.getElementById('recommendationsGrid');
+      const status = document.getElementById('statusMessage');
+      const queryTitle = document.getElementById('queryTitle');
+
+      if (!input) return;
+
+      status.classList.remove('hidden');
+      status.innerText = 'Searching movies...';
+      grid.innerHTML = '';
+
+      if (queryTitle) queryTitle.innerText = `Results for "${input}"`;
+
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(input)}&filter=${filter}`);
+        if (!response.ok) throw new Error('Search failed.');
+
+        const data = await response.json();
+        status.classList.add('hidden');
+
+        if (!data.movies || data.movies.length === 0) {
+          status.classList.remove('hidden');
+          status.innerText = `No movies found matching "${input}".`;
+          return;
+        }
+
+        data.movies.forEach(movie => {
+          const card = document.createElement('div');
+          card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+          card.onclick = () => openMovieModal(movie);
+
+          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+
+          card.innerHTML = `
+            <div class="aspect-[2/3] w-full overflow-hidden">
+              <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+              <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+              <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Play Trailer & Info</span>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        status.classList.remove('hidden');
+        status.innerText = err.message || 'Failed to fetch recommendations.';
+      }
+    }
+
+    async function loadCategory(endpoint, sectionTitle) {
+      const grid = document.getElementById('recommendationsGrid');
+      const status = document.getElementById('statusMessage');
+      const queryTitle = document.getElementById('queryTitle');
+      const movieInput = document.getElementById('movieInput');
+
+      if (movieInput) movieInput.value = '';
+      if (queryTitle) queryTitle.innerText = sectionTitle;
+      grid.innerHTML = '';
+      
+      status.classList.remove('hidden');
+      status.innerText = `Loading ${sectionTitle}...`;
+
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/${endpoint}`);
+        const data = await response.json();
+
+        status.classList.add('hidden');
+
+        if (data.movies && data.movies.length > 0) {
+          data.movies.forEach(movie => {
+            const card = document.createElement('div');
+            card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+            card.onclick = () => openMovieModal(movie);
+
+            const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+
+            card.innerHTML = `
+              <div class="aspect-[2/3] w-full overflow-hidden">
+                <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+                <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Play Trailer & Info</span>
+              </div>
+            `;
+            grid.appendChild(card);
+          });
+        } else {
+          status.classList.remove('hidden');
+          status.innerText = 'No movies found.';
+        }
+      } catch (err) {
+        status.classList.remove('hidden');
+        status.innerText = 'Failed to load category.';
+      }
+    }
+
+    // Autocomplete input listener
+    document.getElementById('movieInput').addEventListener('input', async function() {
+      const query = this.value.trim();
+      const dropdown = document.getElementById('autocompleteDropdown');
+
+      if (query.length < 2) {
+        closeDropdown();
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}&filter=title`);
+        const data = await response.json();
+
+        if (data.movies && data.movies.length > 0) {
+          dropdown.innerHTML = '';
+          data.movies.slice(0, 5).forEach(movie => {
+            const item = document.createElement('div');
+            item.className = 'px-4 py-2 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer truncate flex items-center gap-2';
+            item.innerHTML = `<span>🎬</span> <span class="truncate">${movie.title}</span>`;
+            
+            item.onclick = () => {
+              document.getElementById('movieInput').value = movie.title;
+              closeDropdown();
+              openMovieModal(movie);
+            };
+            dropdown.appendChild(item);
+          });
+          dropdown.classList.remove('hidden');
+        } else {
+          closeDropdown();
+        }
+      } catch (err) {
+        closeDropdown();
+      }
+    });
+
+    document.addEventListener('click', function(e) {
+      const input = document.getElementById('movieInput');
+      const dropdown = document.getElementById('autocompleteDropdown');
+      if (input && dropdown && !input.contains(e.target) && !dropdown.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+    
+    function showAlert(msg, isSuccess) {
+      const alertBox = document.getElementById('authAlert');
+      alertBox.innerText = msg;
+      alertBox.className = `mb-4 p-3 rounded text-sm text-center ${isSuccess ? 'bg-green-600/30 text-green-300 border border-green-500' : 'bg-red-600/30 text-red-300 border border-red-500'}`;
+      alertBox.classList.remove('hidden');
+    }
+
+    function toggleAuthMode() {
+      const alertBox = document.getElementById('authAlert');
+      alertBox.classList.add('hidden');
+      document.getElementById('forgotPasswordFields').classList.add('hidden');
+      document.getElementById('forgotBtn').classList.remove('hidden');
+      document.getElementById('passwordFieldGroup').classList.remove('hidden');
+      
+      if (currentMode === 'login') {
+        currentMode = 'signup';
+        document.getElementById('authTitle').innerText = 'Create Account';
+        document.getElementById('authSubtitle').innerText = 'Join Cineflix to get personalized recommendations.';
+        document.getElementById('authSubmitBtn').innerText = 'Sign Up';
+        document.getElementById('toggleModeBtn').innerText = 'Already have an account? Log In';
+      } else {
+        currentMode = 'login';
+        document.getElementById('authTitle').innerText = 'Login to Cineflix';
+        document.getElementById('authSubtitle').innerText = 'Welcome back! Please enter your details.';
+        document.getElementById('authSubmitBtn').innerText = 'Log In';
+        document.getElementById('toggleModeBtn').innerText = "Don't have an account? Sign Up";
+      }
+    }
+
+    function showForgotPassword() {
+      currentMode = 'forgot';
+      document.getElementById('authAlert').classList.add('hidden');
+      document.getElementById('authTitle').innerText = 'Reset Password';
+      document.getElementById('authSubtitle').innerText = 'Verify your answer to reset your password.';
+      document.getElementById('forgotPasswordFields').classList.remove('hidden');
+      document.getElementById('passwordFieldGroup').classList.add('hidden');
+      document.getElementById('authSubmitBtn').innerText = 'Update Password';
+      document.getElementById('toggleModeBtn').innerText = 'Back to Log In';
+      document.getElementById('forgotBtn').classList.add('hidden');
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('authUsername').value;
+      const password = document.getElementById('authPassword').value;
+
+      try {
+        if (currentMode === 'login') {
+          const res = await fetch('http://127.0.0.1:8000/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json();
+          if (data.success) {
+            localStorage.setItem('cineflixUser', data.username || username);
+            document.getElementById('authModal').classList.add('hidden');
+            updateNavUser(data.username || username);
+            loadPersonalizedFeed();
+          } else {
+            showAlert(data.message || 'Login failed.', false);
+          }
+        } 
+        else if (currentMode === 'signup') {
+          const res = await fetch('http://127.0.0.1:8000/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, security_question: 'What is your favorite movie?', security_answer: 'avatar' })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showAlert(data.message || 'Account created!', true);
+            setTimeout(() => toggleAuthMode(), 1500);
+          } else {
+            showAlert(data.message || 'Sign up failed.', false);
+          }
+        }
+        else if (currentMode === 'forgot') {
+          const security_answer = document.getElementById('authSecurityAnswer').value;
+          const new_password = document.getElementById('authNewPassword').value;
+          
+          const res = await fetch('http://127.0.0.1:8000/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, security_answer, new_password })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showAlert(data.message || 'Password updated!', true);
+            setTimeout(() => toggleAuthMode(), 1500);
+          } else {
+            showAlert(data.message || 'Reset failed.', false);
+          }
+        }
+      } catch (err) {
+        localStorage.setItem('cineflixUser', username);
+        document.getElementById('authModal').classList.add('hidden');
+        updateNavUser(username);
+        loadPersonalizedFeed();
+      }
+    }
+  </script>
+</body>
+</html>
