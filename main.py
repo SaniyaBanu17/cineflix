@@ -14,7 +14,7 @@ import os
 import requests
 import streamlit as st
 
-SIMILARITY_URL = "sha256:bb74e1b7a1b40f4c0195a2647eb9cf9d5285c50c9d0c22590d42299521d09f89"
+SIMILARITY_URL = "https://github.com/SaniyaBanu17/cineflix/releases/download/type_v1.0/similarity.pkl"
 SIMILARITY_PATH = "similarity.pkl"
 
 if not os.path.exists(SIMILARITY_PATH):
