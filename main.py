@@ -4,56 +4,95 @@ import requests
 import pandas as pd
 import streamlit as st
 
-# Page Configuration (Wide layout)
+# Page Configuration
 st.set_page_config(page_title="Cineflix - Watch & Discover", page_icon="🎬", layout="wide")
 
-# --- CUSTOM NETFLIX THEME CSS ---
+# --- CUSTOM NETFLIX TYPOGRAPHY & THEME CSS ---
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700;800&display=swap');
+
     .stApp {
         background-color: #141414;
         color: #ffffff;
+        font-family: 'Montserrat', sans-serif;
     }
+    
     .main-title {
         color: #E50914;
+        font-family: 'Bebas Neue', cursive;
         font-weight: 800;
-        font-size: 2rem;
-        letter-spacing: 1px;
+        font-size: 2.8rem;
+        letter-spacing: 2px;
         margin: 0;
+        padding-top: 5px;
     }
+    
+    .section-header {
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+        font-size: 1.4rem;
+        margin-top: 20px;
+        margin-bottom: 15px;
+        color: #ffffff;
+    }
+
     .hero-box {
-        background: linear-gradient(180deg, rgba(20,20,20,0.2) 0%, rgba(20,20,20,1) 100%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo6LEuPJ19zB.jpg');
+        background: linear-gradient(180deg, rgba(20,20,20,0.3) 0%, rgba(20,20,20,1) 100%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo6LEuPJ19zB.jpg');
         background-size: cover;
         background-position: center;
-        padding: 45px;
-        border-radius: 8px;
+        padding: 50px;
+        border-radius: 12px;
         margin-bottom: 25px;
+        box-shadow: 0px 10px 30px rgba(0,0,0,0.8);
     }
+    
+    .hero-title {
+        font-family: 'Bebas Neue', cursive;
+        font-size: 4rem;
+        color: white;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        letter-spacing: 2px;
+    }
+
     .stButton>button {
         background-color: #E50914;
         color: white;
-        font-weight: bold;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
         border-radius: 4px;
         width: 100%;
         padding: 0.5rem;
         border: none;
+        transition: all 0.2s ease-in-out;
     }
+
     .stButton>button:hover {
         background-color: #f40612;
         color: white;
+        transform: scale(1.02);
     }
+
     .card-title {
+        font-family: 'Montserrat', sans-serif;
         text-align: center;
         font-weight: 700;
-        font-size: 0.9rem;
-        margin-top: 6px;
+        font-size: 0.95rem;
+        margin-top: 8px;
+        margin-bottom: 2px;
         color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
+
     .card-info {
+        font-family: 'Montserrat', sans-serif;
         text-align: center;
         color: #b3b3b3;
-        font-size: 0.75rem;
-        margin-bottom: 4px;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -113,6 +152,23 @@ def fetch_movie_details(movie_id):
     except Exception:
         return "https://via.placeholder.com/500x750?text=No+Image", "Description unavailable.", "2014", 8.5, f"https://www.themoviedb.org/movie/{movie_id}"
 
+def search_all_columns(df, query):
+    if not query:
+        return df.head(0)
+    query_str = str(query).lower().strip()
+    title_mask = df['title'].astype(str).str.lower().str.contains(query_str, na=False)
+    results = df[title_mask]
+    
+    if len(results) < 5:
+        other_masks = []
+        for col in df.columns:
+            if col != 'similarity':
+                other_masks.append(df[col].astype(str).str.lower().str.contains(query_str, na=False))
+        combined_mask = pd.concat(other_masks, axis=1).any(axis=1)
+        results = df[combined_mask]
+        
+    return results
+
 # --- NETFLIX HORIZONTAL NAVBAR ---
 nav1, nav2, nav3, nav4, nav5, nav6, nav7 = st.columns([1.5, 0.7, 0.7, 1.1, 0.9, 1.1, 1.8])
 
@@ -131,12 +187,12 @@ with nav6:
 with nav7:
     search_query = st.text_input("", placeholder="Search movies, actors, directors...", label_visibility="collapsed")
 
-st.markdown("---")
+st.markdown("<hr style='border-color: #282828;'>", unsafe_allow_html=True)
 
 # --- ROUTING PAGES ---
 
 if st.session_state.current_page == "Watchlist":
-    st.markdown("## 📌 My Watchlist")
+    st.markdown("<h2 class='section-header'>📌 My Watchlist</h2>", unsafe_allow_html=True)
     if len(st.session_state.watchlist) == 0:
         st.info("Your watchlist is empty.")
     else:
@@ -150,49 +206,52 @@ if st.session_state.current_page == "Watchlist":
                     st.rerun()
 
 elif search_query:
-    st.markdown(f"### Search Results for: *{search_query}*")
-    mask = movies['title'].str.contains(search_query, case=False, na=False)
-    matched_df = movies[mask].head(8)
+    st.markdown(f"<h3 class='section-header'>Search Results for: <i>{search_query}</i></h3>", unsafe_allow_html=True)
+    matched_df = search_all_columns(movies, search_query).head(8)
+    
     if not matched_df.empty:
-        s_cols = st.columns(4)
+        s_cols = st.columns(min(len(matched_df), 4))
         for idx, row in enumerate(matched_df.iterrows()):
-            m_id = row[1].movie_id
+            m_id = row[1].movie_id if 'movie_id' in row[1] else row[1].get('id', 0)
             m_title = row[1].title
             poster, overview, year, rating, link = fetch_movie_details(m_id)
             with s_cols[idx % 4]:
                 st.image(poster, use_column_width=True)
                 st.markdown(f"<p class='card-title'>{m_title}</p>", unsafe_allow_html=True)
                 st.markdown(f"<p class='card-info'>{year} | ⭐ {rating}/10</p>", unsafe_allow_html=True)
-                st.markdown(f"<a href='{link}' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:5px;border-radius:4px;width:100%;'>▶ Watch on TMDB</button></a>", unsafe_allow_html=True)
+                if st.button("➕ Watchlist", key=f"search_add_{idx}"):
+                    st.session_state.watchlist.append({"title": m_title, "poster": poster, "link": link})
+                    st.success("Added!")
+                st.markdown(f"<a href='{link}' target='_blank'><button style='background-color:#E50914;color:white;font-family:Montserrat,sans-serif;font-weight:700;border:none;padding:6px;border-radius:4px;width:100%;margin-top:4px;cursor:pointer;'>▶ Watch on TMDB</button></a>", unsafe_allow_html=True)
     else:
-        st.info("No matching movies found.")
+        st.info(f"No matching movies, directors, or actors found for '{search_query}'.")
 
 else:
     # --- GENRES HORIZONTAL BAR ---
-    st.markdown("### **GENRES:** &nbsp;&nbsp;&nbsp; " + " &nbsp;&nbsp;&nbsp; ".join([f"**{g}**" for g in ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Romance"]]))
+    st.markdown("<p style='font-weight:700; font-size:1.1rem;'>GENRES: &nbsp;&nbsp;&nbsp; " + " &nbsp;&nbsp;&nbsp; ".join([f"{g}" for g in ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Romance"]]) + "</p>", unsafe_allow_html=True)
     
     genre_col1, genre_col2, genre_col3, genre_col4, genre_col5, genre_col6 = st.columns(6)
     with genre_col1: 
-        if st.button("Action Genre"): st.session_state.selected_genre = "Action"
+        if st.button("Action"): st.session_state.selected_genre = "Action"
     with genre_col2: 
-        if st.button("Comedy Genre"): st.session_state.selected_genre = "Comedy"
+        if st.button("Comedy"): st.session_state.selected_genre = "Comedy"
     with genre_col3: 
-        if st.button("Drama Genre"): st.session_state.selected_genre = "Drama"
+        if st.button("Drama"): st.session_state.selected_genre = "Drama"
     with genre_col4: 
-        if st.button("Horror Genre"): st.session_state.selected_genre = "Horror"
+        if st.button("Horror"): st.session_state.selected_genre = "Horror"
     with genre_col5: 
-        if st.button("Sci-Fi Genre"): st.session_state.selected_genre = "Sci-Fi"
+        if st.button("Sci-Fi"): st.session_state.selected_genre = "Sci-Fi"
     with genre_col6: 
-        if st.button("Romance Genre"): st.session_state.selected_genre = "Romance"
+        if st.button("Romance"): st.session_state.selected_genre = "Romance"
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --- HERO BANNER: INTERSTELLAR ---
     st.markdown("""
         <div class='hero-box'>
-            <p style='color: #E50914; font-weight: bold; font-size: 0.9rem; margin-bottom: 0px;'>CF SERIES • FEATURED</p>
-            <h1 style='font-size: 3rem; color: white; margin-top: 5px; margin-bottom: 5px;'>Interstellar</h1>
-            <p style='max-width: 620px; color: #ddd; font-size: 0.95rem;'>
+            <p style='color: #E50914; font-weight: 800; font-size: 0.9rem; margin-bottom: 0px; letter-spacing: 1px;'>CF SERIES • FEATURED</p>
+            <div class='hero-title'>Interstellar</div>
+            <p style='max-width: 620px; color: #dddddd; font-size: 0.95rem; line-height: 1.5;'>
                 When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history: traveling beyond this galaxy to discover whether mankind has a future among the stars.
             </p>
         </div>
@@ -205,17 +264,17 @@ else:
     if st.session_state.show_details:
         st.info("⭐ Interstellar (2014) | Rating: 8.6/10 | Director: Christopher Nolan\n\nEpic space adventure exploring gravity, time dilation, and survival.")
         st.video("https://www.youtube.com/watch?v=zSWdZVtXT7E")
-        st.markdown(f"<a href='https://www.themoviedb.org/movie/157336' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:8px;border-radius:4px;width:200px;'>Watch on TMDB</button></a>", unsafe_allow_html=True)
+        st.markdown(f"<a href='https://www.themoviedb.org/movie/157336' target='_blank'><button style='background-color:#E50914;color:white;font-family:Montserrat,sans-serif;font-weight:700;border:none;padding:8px;border-radius:4px;width:200px;cursor:pointer;'>Watch on TMDB</button></a>", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --- RECOMMENDED FOR ADMIN SECTION ---
-    st.markdown("### Recommended for **admin** <span style='font-size:0.8rem; color:#b3b3b3;'>(Based on your activity)</span>", unsafe_allow_html=True)
+    st.markdown("<h3 class='section-header'>Recommended for <span style='color:#E50914;'>admin</span> <span style='font-size:0.8rem; color:#b3b3b3; font-weight:400;'>(Based on your activity)</span></h3>", unsafe_allow_html=True)
     
     rec_sample = movies.sample(n=4, random_state=101)
     r_cols = st.columns(4)
     for idx, row in enumerate(rec_sample.iterrows()):
-        m_id = row[1].movie_id
+        m_id = row[1].movie_id if 'movie_id' in row[1] else row[1].get('id', 0)
         m_title = row[1].title
         poster, overview, year, rating, link = fetch_movie_details(m_id)
         with r_cols[idx]:
@@ -229,15 +288,15 @@ else:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # --- TRENDING & RECOMMENDED MOVIES SECTION ---
-    st.markdown("### Trending & Recommended Movies", unsafe_allow_html=True)
+    st.markdown("<h3 class='section-header'>Trending & Recommended Movies</h3>", unsafe_allow_html=True)
     trend_sample = movies.sample(n=8, random_state=202)
     t_cols = st.columns(4)
     for idx, row in enumerate(trend_sample.iterrows()):
-        m_id = row[1].movie_id
+        m_id = row[1].movie_id if 'movie_id' in row[1] else row[1].get('id', 0)
         m_title = row[1].title
         poster, overview, year, rating, link = fetch_movie_details(m_id)
         with t_cols[idx % 4]:
             st.image(poster, use_column_width=True)
             st.markdown(f"<p class='card-title'>{m_title}</p>", unsafe_allow_html=True)
             st.markdown(f"<p class='card-info'>{year} | ⭐ {rating}/10</p>", unsafe_allow_html=True)
-            st.markdown(f"<a href='{link}' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:5px;border-radius:4px;width:100%;margin-top:4px;'>▶ TMDB / Watch</button></a>", unsafe_allow_html=True)
+            st.markdown(f"<a href='{link}' target='_blank'><button style='background-color:#E50914;color:white;font-family:Montserrat,sans-serif;font-weight:700;border:none;padding:5px;border-radius:4px;width:100%;margin-top:4px;cursor:pointer;'>▶ TMDB / Watch</button></a>", unsafe_allow_html=True)
