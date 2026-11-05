@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 # Page Configuration (Wide layout)
-st.set_page_config(page_title="Cineflix - Ultimate Movie Recommendation System", page_icon="🎬", layout="wide")
+st.set_page_config(page_title="Cineflix - Movie Recommendation System", page_icon="🎬", layout="wide")
 
 # --- CUSTOM NETFLIX BLACK & RED THEME CSS ---
 st.markdown("""
@@ -18,14 +18,14 @@ st.markdown("""
         color: #E50914;
         font-weight: 800;
         text-align: center;
-        font-size: 3rem;
+        font-size: 3.2rem;
         margin-bottom: 0px;
     }
     .sub-title {
         color: #b3b3b3;
         text-align: center;
         font-size: 1.2rem;
-        margin-bottom: 30px;
+        margin-bottom: 25px;
     }
     .stButton>button {
         background-color: #E50914;
@@ -35,6 +35,7 @@ st.markdown("""
         width: 100%;
         padding: 0.6rem;
         border: none;
+        margin-top: 28px;
     }
     .stButton>button:hover {
         background-color: #f40612;
@@ -113,7 +114,7 @@ def fetch_movie_details(movie_id):
         data = requests.get(url).json()
         poster_path = data.get('poster_path')
         poster_url = "https://image.tmdb.org/t/p/w500/" + poster_path if poster_path else "https://via.placeholder.com/500x750?text=No+Image"
-        homepage = data.get('homepage', f"https://www.themoviedb.org/movie/{movie_id}")
+        homepage = data.get('homepage')
         if not homepage or homepage == "":
             homepage = f"https://www.themoviedb.org/movie/{movie_id}"
         return poster_url, homepage
@@ -123,7 +124,17 @@ def fetch_movie_details(movie_id):
 # Recommendation Logic
 def recommend(movie_title):
     try:
-        movie_index = movies[movies['title'].str.lower() == movie_title.lower()].index[0]
+        # Match movie title safely
+        match_idx = movies[movies['title'].str.lower() == movie_title.lower()].index
+        if len(match_idx) == 0:
+            # Fallback to partial match if exact title isn't found
+            match_idx = movies[movies['title'].str.contains(movie_title, case=False, na=False)].index
+        
+        if len(match_idx) == 0:
+            st.error(f"Movie '{movie_title}' not found in database.")
+            return [], [], []
+            
+        movie_index = match_idx[0]
         distances = similarity[movie_index]
         movies_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
 
@@ -141,52 +152,30 @@ def recommend(movie_title):
             
         return recommended_movies, recommended_posters, recommended_links
     except Exception as e:
-        st.error(f"Could not find exact match for '{movie_title}'. Try searching by keyword!")
+        st.error(f"Error generating recommendations: {e}")
         return [], [], []
 
 # --- MAIN DASHBOARD INTERFACE ---
 st.markdown("<h1 class='main-title'>🎬 CINEFLIX</h1>", unsafe_allow_html=True)
-st.markdown("<p class='sub-title'>Explore genres, search by title, director, or actor, and get personalized recommendations.</p>", unsafe_allow_html=True)
+st.markdown("<p class='sub-title'>Search movies, directors, or actors and discover your next favorite film.</p>", unsafe_allow_html=True)
 
-# Sidebar filters & navigation
-st.sidebar.markdown("## 🔍 Advanced Search & Filters")
-search_query = st.sidebar.text_input("Search Title / Actor / Director:")
-selected_genre = st.sidebar.selectbox("Filter by Genre:", ["All", "Action", "Comedy", "Drama", "Romance", "Horror", "Sci-Fi"])
-
-# Main Selection Form
+# Main Horizontal Input Row (Movie selector/search + Button right beside it)
 movie_list = movies['title'].values if 'title' in movies.columns else []
 
 col1, col2 = st.columns([3, 1])
+
 with col1:
-    selected_movie_name = st.selectbox("Select a movie you love:", movie_list)
+    selected_movie_name = st.selectbox("Search or Select a Movie, Director, or Actor:", movie_list)
 
 with col2:
-    st.write("")
-    st.write("")
     recommend_btn = st.button("Show Recommendations")
 
-# Handling Search / Filter results or Recommendations
-if search_query:
-    st.markdown(f"### Search Results for: *{search_query}*")
-    match_results = movies[movies['title'].str.contains(search_query, case=False, na=False)]
-    if not match_results.empty:
-        scols = st.columns(min(len(match_results), 5))
-        for idx, row in enumerate(match_results.head(5).iterrows()):
-            m_id = row[1].movie_id
-            m_title = row[1].title
-            poster, link = fetch_movie_details(m_id)
-            with scols[idx]:
-                st.image(poster, use_column_width=True)
-                st.markdown(f"<p class='card-title'>{m_title}</p>", unsafe_allow_html=True)
-                st.markdown(f"<a href='{link}' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:5px 10px;border-radius:4px;width:100%;cursor:pointer;'>▶ Watch / TMDB</button></a>", unsafe_allow_html=True)
-    else:
-        st.info("No matching titles found in search.")
-
-elif recommend_btn or selected_movie_name:
-    with st.spinner("Unlocking cinematic matches..."):
+# Handling Recommendations
+if recommend_btn or selected_movie_name:
+    with st.spinner("Finding similar movies and fetching posters..."):
         names, posters, links = recommend(selected_movie_name)
         if names:
-            st.markdown(f"### Movies Similar to *{selected_movie_name}*")
+            st.markdown(f"### Recommended Movies for: *{selected_movie_name}*")
             cols = st.columns(5)
             for idx, col in enumerate(cols):
                 with col:
