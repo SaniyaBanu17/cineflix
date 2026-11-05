@@ -114,6 +114,8 @@ def fetch_movie_details(movie_id):
         poster_path = data.get('poster_path')
         poster_url = "https://image.tmdb.org/t/p/w500/" + poster_path if poster_path else "https://via.placeholder.com/500x750?text=No+Image"
         homepage = data.get('homepage', f"https://www.themoviedb.org/movie/{movie_id}")
+        if not homepage or homepage == "":
+            homepage = f"https://www.themoviedb.org/movie/{movie_id}"
         return poster_url, homepage
     except Exception:
         return "https://via.placeholder.com/500x750?text=No+Image", f"https://www.themoviedb.org/movie/{movie_id}"
@@ -166,7 +168,6 @@ with col2:
 # Handling Search / Filter results or Recommendations
 if search_query:
     st.markdown(f"### Search Results for: *{search_query}*")
-    # Filter DataFrame columns safely if they exist
     match_results = movies[movies['title'].str.contains(search_query, case=False, na=False)]
     if not match_results.empty:
         scols = st.columns(min(len(match_results), 5))
@@ -191,5 +192,4 @@ elif recommend_btn or selected_movie_name:
                 with col:
                     st.image(posters[idx], use_column_width=True)
                     st.markdown(f"<p class='card-title'>{names[idx]}</p>", unsafe_allow_html=True)
-                    # TMDB Watch / Trailer link button
                     st.markdown(f"<a href='{links[idx]}' target='_blank'><button style='background-color:#E50914;color:white;border:none;padding:6px 12px;border-radius:4px;width:100%;font-weight:bold;cursor:pointer;'>▶ Watch on TMDB</button></a>", unsafe_allow_html=True)
