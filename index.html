@@ -395,6 +395,7 @@
       let rating = "7.5";
       let year = "2023";
       let tmdbId = null;
+      let runtime = 120; // Default average feature film runtime in minutes
 
       if (typeof movie === 'string') {
         title = movie;
@@ -424,9 +425,10 @@
           year = String(rawDate).substring(0, 4);
         }
         tmdbId = movie.id || movie.movie_id || null;
+        runtime = movie.runtime || 120;
       }
 
-      currentSelectedMovie = { title, poster, overview, rating, year, id: tmdbId };
+      currentSelectedMovie = { title, poster, overview, rating, year, id: tmdbId, runtime };
 
       document.getElementById('modalTitle').innerText = title;
       const posterEl = document.getElementById('modalPoster');
@@ -451,34 +453,7 @@
 
       document.getElementById('movieModal').classList.remove('hidden');
     }
-
-    function closeMovieModal() {
-      document.getElementById('movieModal').classList.add('hidden');
-    }
-
-    window.onclick = function(event) {
-      const modal = document.getElementById('movieModal');
-      if (event.target === modal) {
-        closeMovieModal();
-      }
-    };
-
-    function toggleWatchlist() {
-      if (!currentSelectedMovie) return;
-
-      let watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
-      const index = watchlist.findIndex(m => m.title === currentSelectedMovie.title);
-
-      if (index > -1) {
-        watchlist.splice(index, 1);
-      } else {
-        watchlist.push(currentSelectedMovie);
-      }
-
-      localStorage.setItem('cineflix_watchlist', JSON.stringify(watchlist));
-      updateWatchlistButtonState();
-    }
-
+    
     function updateWatchlistButtonState() {
       if (!currentSelectedMovie) return;
       let watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
@@ -507,7 +482,7 @@
       const status = document.getElementById('statusMessage');
 
       status.classList.add('hidden');
-      if (queryTitle) queryTitle.innerText = "My Watchlist";
+      if (queryTitle) queryTitle.innerText = "My Watchlist & Binge Estimator";
       grid.innerHTML = '';
 
       if (watchlist.length === 0) {
@@ -516,10 +491,42 @@
         return;
       }
 
+      // Calculate total runtime
+      const totalMinutes = watchlist.reduce((acc, movie) => acc + (movie.runtime || 120), 0);
+      const totalHours = (totalMinutes / 60).toFixed(1);
+      const daysAtTwoHours = (totalMinutes / 120).toFixed(1);
+
+      // Render Binge Estimator Stats Banner
+      const statsBanner = document.createElement('div');
+      statsBanner.className = 'col-span-full bg-slate-900/90 border border-cyan-500/30 p-5 rounded-2xl mb-6 shadow-xl flex flex-wrap items-center justify-between gap-4';
+      statsBanner.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">⏱️</span>
+          <div>
+            <h4 class="text-white font-bold text-base">Watchlist Time Estimator</h4>
+            <p class="text-xs text-slate-400">Total movies saved: <span class="text-cyan-400 font-semibold">${watchlist.length}</span></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-6 text-right">
+          <div>
+            <span class="block text-xl font-extrabold text-cyan-400">${totalHours} hrs</span>
+            <span class="text-[10px] uppercase tracking-wider text-slate-400">Total Runtime</span>
+          </div>
+          <div class="border-l border-slate-800 pl-6">
+            <span class="block text-xl font-extrabold text-purple-400">${daysAtTwoHours} days</span>
+            <span class="text-[10px] uppercase tracking-wider text-slate-400">@ 2 hrs / day</span>
+          </div>
+        </div>
+      `;
+      grid.appendChild(statsBanner);
+
+      // Render Movie Cards
       watchlist.forEach(movie => {
         const card = document.createElement('div');
         card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
         card.onclick = () => openMovieModal(movie);
+
+        const runtimeText = movie.runtime ? `${movie.runtime} mins` : '~120 mins';
 
         card.innerHTML = `
           <div class="aspect-[2/3] w-full overflow-hidden">
@@ -527,7 +534,10 @@
           </div>
           <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
             <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-            <span class="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded w-max mt-2">In Watchlist</span>
+            <div class="flex items-center justify-between mt-2">
+              <span class="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">In Watchlist</span>
+              <span class="text-xs text-cyan-400 font-medium">⏳ ${runtimeText}</span>
+            </div>
           </div>
         `;
         grid.appendChild(card);
