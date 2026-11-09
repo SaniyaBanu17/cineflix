@@ -438,9 +438,11 @@
     }
 
     function openMovieModal(movie) {
+      console.log("Opening modal for movie object:", movie);
+
       let title = "Untitled";
       let poster = "";
-      let overview = "";
+      let overview = "No description found for this title.";
       let rating = "7.5";
       let year = "2023";
       let tmdbId = null;
@@ -448,7 +450,7 @@
 
       if (typeof movie === 'string') {
         title = movie;
-        overview = "No description found for this title. Check out the trailer below or explore TMDB for more details!";
+        overview = `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
       } else if (movie && typeof movie === 'object') {
         title = movie.title || movie.name || movie.original_title || "Untitled";
         
@@ -457,11 +459,13 @@
           poster = 'https://image.tmdb.org/t/p/w500' + poster;
         }
 
+        // Check all possible overview property names
         const rawOverview = movie.overview || movie.plot || movie.description || movie.summary || movie.tagline || "";
-        if (rawOverview && rawOverview !== 'nan' && rawOverview !== 'NaN' && rawOverview.trim() !== '') {
-          overview = rawOverview;
+        
+        if (rawOverview && String(rawOverview).trim() !== '' && String(rawOverview).toLowerCase() !== 'nan') {
+          overview = String(rawOverview);
         } else {
-          overview = "No description found for this title. Check out the trailer below or explore TMDB for more details!";
+          overview = `No official synopsis available for '${title}'. Explore the trailer or TMDB link below for more details!`;
         }
         
         const rawRating = movie.vote_average ?? movie.rating ?? movie.score;
@@ -478,15 +482,29 @@
       }
 
       currentSelectedMovie = { title, poster, overview, rating, year, id: tmdbId, runtime };
-      console.log("Movie Loaded into Modal:", currentSelectedMovie);
 
+      // Update DOM Elements directly
       document.getElementById('modalTitle').innerText = title;
+      
       const posterEl = document.getElementById('modalPoster');
-      if (posterEl) posterEl.src = poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Poster';
+      if (posterEl) {
+        posterEl.src = poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Poster';
+      }
 
-      document.getElementById('modalOverview').innerText = overview;
-      document.getElementById('modalRating').innerText = `★ ${rating}`;
-      document.getElementById('modalYear').innerText = year;
+      const overviewEl = document.getElementById('modalOverview');
+      if (overviewEl) {
+        overviewEl.innerText = overview;
+      }
+
+      const ratingEl = document.getElementById('modalRating');
+      if (ratingEl) {
+        ratingEl.innerText = `★ ${rating}`;
+      }
+
+      const yearEl = document.getElementById('modalYear');
+      if (yearEl) {
+        yearEl.innerText = year;
+      }
 
       updateWatchlistButtonState();
 
@@ -501,7 +519,7 @@
 
       document.getElementById('movieModal').classList.remove('hidden');
     }
-
+    
     function closeMovieModal() {
       document.getElementById('movieModal').classList.add('hidden');
     }
