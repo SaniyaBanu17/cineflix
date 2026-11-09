@@ -131,11 +131,17 @@ def get_popular_movies():
         popular_list = []
         for _, row in sample_df.iterrows():
             movie_id = int(row.get('movie_id', row.get('id', 0)))
+            title = str(row.get('title', 'Untitled'))
+            
+            raw_overview = str(row.get('overview', '')).strip()
+            if not raw_overview or raw_overview.lower() in ['nan', 'none', 'null', '']:
+                raw_overview = f"'{title}' is an acclaimed feature film available for discovery on Cineflix."
+
             popular_list.append({
                 "id": movie_id,
-                "title": str(row.get('title', 'Untitled')),
+                "title": title,
                 "poster": fetch_poster(movie_id, row.get('poster')),
-                "overview": str(row.get('overview', 'No description available.')),
+                "overview": raw_overview,
                 "vote_average": float(row.get('vote_average', 7.5)) if pd.notna(row.get('vote_average')) else 7.5,
                 "release_date": str(row.get('release_date', '2023'))[:4]
             })
@@ -153,11 +159,17 @@ def get_catalog():
         catalog_list = []
         for _, row in sample_df.iterrows():
             movie_id = int(row.get('movie_id', row.get('id', 0)))
+            title = str(row.get('title', 'Untitled'))
+
+            raw_overview = str(row.get('overview', '')).strip()
+            if not raw_overview or raw_overview.lower() in ['nan', 'none', 'null', '']:
+                raw_overview = f"'{title}' is an acclaimed feature film available for discovery on Cineflix."
+
             catalog_list.append({
                 "id": movie_id,
-                "title": str(row.get('title', 'Untitled')),
+                "title": title,
                 "poster": fetch_poster(movie_id, row.get('poster')),
-                "overview": str(row.get('overview', 'No description available.')),
+                "overview": raw_overview,
                 "vote_average": float(row.get('vote_average', 7.5)) if pd.notna(row.get('vote_average')) else 7.5,
                 "release_date": str(row.get('release_date', '2023'))[:4]
             })
@@ -174,10 +186,7 @@ def get_personalized_recommendations(username: Optional[str] = "saniya"):
             return {"movies": []}
             
         user_key = username.strip().lower() if username else "saniya"
-        
-        # Tailor genre based on user profile (Admin / Saniya get Sci-Fi & Space/Thrillers)
         target_genre = "science fiction" if any(u in user_key for u in ["saniya", "admin"]) else "drama"
-        
         title_col = 'title' if 'title' in new_df.columns else new_df.columns[1]
         
         if 'search_blob' in new_df.columns:
@@ -193,11 +202,17 @@ def get_personalized_recommendations(username: Optional[str] = "saniya"):
         
         for _, row in sample_df.iterrows():
             movie_id = int(row.get('movie_id', row.get('id', 0)))
+            title = str(row.get(title_col, 'Untitled'))
+
+            raw_overview = str(row.get('overview', '')).strip()
+            if not raw_overview or raw_overview.lower() in ['nan', 'none', 'null', '']:
+                raw_overview = f"'{title}' is an acclaimed feature film available for discovery on Cineflix."
+
             rec_list.append({
                 "id": movie_id,
-                "title": str(row.get(title_col, 'Untitled')),
+                "title": title,
                 "poster": fetch_poster(movie_id, row.get('poster')),
-                "overview": str(row.get('overview', 'Curated recommendation based on your profile.')),
+                "overview": raw_overview,
                 "vote_average": float(row.get('vote_average', 8.0)) if pd.notna(row.get('vote_average')) else 8.0,
                 "release_date": str(row.get('release_date', '2023'))[:4]
             })
@@ -224,7 +239,6 @@ async def search_movies(query: str = "", filter: str = "all"):
             q1 = "science fiction"
             q2 = "sciencefiction"
 
-        # Prioritize exact or starting-with title matches so items like 'Annabelle' appear first
         exact_match_mask = title_series.str.startswith(q1, na=False) | title_series.str.contains(r'\b' + re.escape(q1) + r'\b', na=False)
         
         if 'search_blob' in new_df.columns:
@@ -236,7 +250,6 @@ async def search_movies(query: str = "", filter: str = "all"):
         else:
             blob_mask = title_series.str.contains(q1, na=False)
 
-        # Combine: exact title matches first, followed by remaining blob matches
         exact_df = new_df[exact_match_mask]
         other_df = new_df[blob_mask & ~exact_match_mask]
         filtered_df = pd.concat([exact_df, other_df]).head(15)
@@ -245,17 +258,17 @@ async def search_movies(query: str = "", filter: str = "all"):
         for _, row in filtered_df.iterrows():
             movie_id = int(row.get('movie_id', row.get('id', 0)))
             poster_url = fetch_poster(movie_id, row.get('poster'))
+            movie_title = str(row.get(title_col, 'Untitled'))
 
             overview_text = str(row.get('overview', '')).strip()
             if not overview_text or overview_text.lower() in ['nan', 'none', 'null', '']:
                 overview_text = str(row.get('tagline', '')).strip()
             if not overview_text or overview_text.lower() in ['nan', 'none', 'null', '']:
-                movie_title = str(row.get(title_col, 'Untitled'))
                 overview_text = f"'{movie_title}' is an acclaimed feature film available for discovery on Cineflix."
 
             results.append({
                 "id": movie_id,
-                "title": str(row.get(title_col, 'Untitled')),
+                "title": movie_title,
                 "poster": poster_url,
                 "overview": overview_text,
                 "vote_average": float(row.get('vote_average', 7.5)) if pd.notna(row.get('vote_average')) else 7.5,
@@ -322,4 +335,3 @@ def forgot_password(data: ForgotPasswordRequest):
         return {"success": False, "message": "Incorrect security answer."}
     users_db[user_key]["password"] = data.new_password
     return {"success": True, "message": "Password updated successfully!"}
-
