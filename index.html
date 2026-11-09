@@ -514,13 +514,14 @@
       if (!input) return;
 
       status.classList.remove('hidden');
-      status.innerText = 'Searching movies...';
+      status.innerText = `Searching for "${input}"...`;
       grid.innerHTML = '';
 
       if (queryTitle) queryTitle.innerText = `Results for "${input}"`;
 
       try {
-        const response = await fetch('/popular');
+        // Updated fetch to send the query parameter to /search endpoint
+        const response = await fetch(`/search?query=${encodeURIComponent(input)}&filter=${filter}`);
         if (!response.ok) throw new Error('Search failed.');
 
         const data = await response.json();
