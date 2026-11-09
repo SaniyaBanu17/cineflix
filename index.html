@@ -570,7 +570,7 @@
       status.innerText = `Loading ${sectionTitle}...`;
 
       try {
-        const response = await fetch(`http://127.0.0.1:8000/${endpoint}`);
+        const response = await fetch(`/${endpoint}`);
         const data = await response.json();
 
         status.classList.add('hidden');
@@ -615,7 +615,7 @@
       }
 
       try {
-        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}&filter=title`);
+        const response = await fetch(`/search?query=${encodeURIComponent(query)}&filter=title`);
         const data = await response.json();
 
         if (data.movies && data.movies.length > 0) {
@@ -697,7 +697,7 @@
 
       try {
         if (currentMode === 'login') {
-          const res = await fetch('http://127.0.0.1:8000/login', {
+          const res = await fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -713,7 +713,7 @@
           }
         } 
         else if (currentMode === 'signup') {
-          const res = await fetch('http://127.0.0.1:8000/signup', {
+          const res = await fetch('/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password, security_question: 'What is your favorite movie?', security_answer: 'avatar' })
@@ -730,7 +730,7 @@
           const security_answer = document.getElementById('authSecurityAnswer').value;
           const new_password = document.getElementById('authNewPassword').value;
           
-          const res = await fetch('http://127.0.0.1:8000/forgot-password', {
+          const res = await fetch('/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, security_answer, new_password })
