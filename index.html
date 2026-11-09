@@ -388,81 +388,53 @@
       if (dropdown) dropdown.classList.add('hidden');
     }
 
-    function openMovieModal(movie) {
-      let title = "Untitled";
-      let poster = "";
-      let overview = "";
-      let rating = "7.5";
-      let year = "2023";
-      let tmdbId = null;
-      let runtime = 120; // Default average feature film runtime in minutes
-
-      if (typeof movie === 'string') {
-        title = movie;
-        overview = `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
-      } else if (movie && typeof movie === 'object') {
-        title = movie.title || movie.name || movie.original_title || "Untitled";
-        
-        poster = movie.poster || movie.poster_path || movie.image || "";
-        if (poster && poster.startsWith('/')) {
-          poster = 'https://image.tmdb.org/t/p/w500' + poster;
-        }
-
-        const rawOverview = movie.overview || movie.plot || movie.description || movie.summary || movie.tagline || "";
-        if (rawOverview && rawOverview !== 'nan' && rawOverview.trim() !== '') {
-          overview = rawOverview;
-        } else {
-          overview = `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
-        }
-        
-        const rawRating = movie.vote_average ?? movie.rating ?? movie.score;
-        if (rawRating !== undefined && rawRating !== null && rawRating !== "N/A" && !isNaN(rawRating)) {
-          rating = typeof rawRating === 'number' ? rawRating.toFixed(1) : rawRating;
-        }
-
-        const rawDate = movie.release_date || movie.year || movie.releaseDate || "";
-        if (rawDate && rawDate !== 'nan') {
-          year = String(rawDate).substring(0, 4);
-        }
-        tmdbId = movie.id || movie.movie_id || null;
-        runtime = movie.runtime || 120;
+    function toggleWatchlist() {
+      if (!currentSelectedMovie || !currentSelectedMovie.title) {
+        console.error("Watchlist Error: No movie selected or movie object is missing!");
+        alert("Please select a movie first before adding it to your watchlist.");
+        return;
       }
 
-      currentSelectedMovie = { title, poster, overview, rating, year, id: tmdbId, runtime };
+      let watchlist = [];
+      try {
+        watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
+      } catch (e) {
+        console.warn("LocalStorage read error, resetting watchlist.");
+        watchlist = [];
+      }
 
-      document.getElementById('modalTitle').innerText = title;
-      const posterEl = document.getElementById('modalPoster');
-      if (posterEl) posterEl.src = poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Poster';
+      const index = watchlist.findIndex(m => m.title === currentSelectedMovie.title);
 
-      document.getElementById('modalOverview').innerText = overview;
-      document.getElementById('modalRating').innerText = `★ ${rating}`;
-      document.getElementById('modalYear').innerText = year;
+      if (index > -1) {
+        watchlist.splice(index, 1);
+      } else {
+        watchlist.push(currentSelectedMovie);
+      }
+
+      try {
+        localStorage.setItem('cineflix_watchlist', JSON.stringify(watchlist));
+      } catch (e) {
+        alert("Storage is full or disabled in this browser mode (e.g. Incognito).");
+        return;
+      }
 
       updateWatchlistButtonState();
-
-      document.getElementById('modalTrailerBtn').onclick = () => {
-        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' official trailer')}`, '_blank');
-      };
-
-      document.getElementById('modalTmdbBtn').onclick = () => {
-        const targetUrl = tmdbId 
-          ? `https://www.themoviedb.org/movie/${tmdbId}`
-          : `https://www.themoviedb.org/search?query=${encodeURIComponent(title)}`;
-        window.open(targetUrl, '_blank');
-      };
-
-      document.getElementById('movieModal').classList.remove('hidden');
     }
-    
+
     function updateWatchlistButtonState() {
-      if (!currentSelectedMovie) return;
-      let watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
-      const exists = watchlist.some(m => m.title === currentSelectedMovie.title);
-      
       const btnText = document.getElementById('watchlistBtnText');
       const btn = document.getElementById('watchlistBtn');
       
-      if (!btn || !btnText) return;
+      if (!btn || !btnText || !currentSelectedMovie) return;
+
+      let watchlist = [];
+      try {
+        watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
+      } catch (e) {
+        watchlist = [];
+      }
+
+      const exists = watchlist.some(m => m.title === currentSelectedMovie.title);
 
       if (exists) {
         btnText.innerText = "✓ In Watchlist";
