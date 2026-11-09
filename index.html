@@ -9,6 +9,15 @@
     ::-webkit-scrollbar { height: 8px; }
     ::-webkit-scrollbar-track { background: #0b0f19; }
     ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
+    
+    @keyframes spin-pulse {
+      0% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.08) rotate(180deg); }
+      100% { transform: scale(1) rotate(360deg); }
+    }
+    .animate-spin-pulse {
+      animation: spin-pulse 0.6s ease-in-out infinite;
+    }
   </style>
 </head>
 <body class="bg-[#0b0f19] text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-black pt-20">
@@ -25,8 +34,13 @@
       </div>
     </div>
     
-    <!-- Search Bar with Filter Dropdown -->
+    <!-- Search Bar with Filter Dropdown & Surprise Button -->
     <div class="flex items-center gap-2">
+      <button onclick="triggerSurpriseMe()" title="Pick a Random Movie" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs px-3.5 py-2 rounded-full transition cursor-pointer shadow-lg shadow-purple-500/20 flex items-center gap-1">
+        <span id="surpriseIcon">🎲</span>
+        <span class="hidden sm:inline">Surprise Me!</span>
+      </button>
+
       <select id="searchFilter" class="bg-slate-900/90 text-slate-300 text-xs rounded-full px-3 py-2 border border-slate-700 focus:outline-none focus:border-cyan-500 transition">
         <option value="all">All Fields</option>
         <option value="title">Title Only</option>
@@ -69,6 +83,10 @@
       <div class="flex items-center gap-4">
         <button onclick="openMovieModal({title: 'Interstellar', overview: 'When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history...', rating: 8.6, year: '2014', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'})" class="bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 text-slate-950 font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition shadow-lg shadow-cyan-500/20 cursor-pointer">
           <span>▶</span> Watch Trailer & Info
+        </button>
+
+        <button onclick="triggerSurpriseMe()" class="bg-purple-900/60 hover:bg-purple-800/80 text-purple-200 border border-purple-500/40 font-bold px-5 py-2.5 rounded-lg flex items-center gap-2 transition cursor-pointer shadow-md">
+          <span>🎰</span> Spin Surprise Wheel
         </button>
       </div>
     </div>
@@ -232,6 +250,39 @@
       }
       loadCategory('popular', 'Trending & Recommended Movies');
     });
+
+    async function triggerSurpriseMe() {
+      const icon = document.getElementById('surpriseIcon');
+      if (icon) icon.classList.add('animate-spin-pulse');
+
+      const status = document.getElementById('statusMessage');
+      if (status) {
+        status.classList.remove('hidden');
+        status.innerText = "🎰 Spinning the movie wheel for a surprise pick...";
+      }
+
+      try {
+        const response = await fetch('/popular');
+        const data = await response.json();
+        
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin-pulse');
+          if (status) status.classList.add('hidden');
+
+          if (data.movies && data.movies.length > 0) {
+            const randomIndex = Math.floor(Math.random() * data.movies.length);
+            const pickedMovie = data.movies[randomIndex];
+            openMovieModal(pickedMovie);
+          } else {
+            alert("Could not spin the wheel right now. Try again!");
+          }
+        }, 800);
+      } catch (err) {
+        if (icon) icon.classList.remove('animate-spin-pulse');
+        if (status) status.classList.add('hidden');
+        alert("Wheel spin failed. Please check your connection!");
+      }
+    }
 
     function openAuthModal() {
       document.getElementById('authModal').classList.remove('hidden');
