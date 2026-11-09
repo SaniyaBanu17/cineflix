@@ -257,7 +257,7 @@
       if (nameEl) nameEl.innerText = user;
 
       try {
-        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(topGenre)}&filter=genre`);
+        const response = await fetch(`/search?query=${encodeURIComponent(topGenre)}`);
         const data = await response.json();
 
         if (data.movies && data.movies.length > 0) {
@@ -466,7 +466,7 @@
       if (queryTerm === 'sci-fi') queryTerm = 'science fiction';
 
       try {
-        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(queryTerm)}&filter=genre`);
+        const response = await fetch(`/search?query=${encodeURIComponent(queryTerm)}`);
         const data = await response.json();
 
         status.classList.add('hidden');
