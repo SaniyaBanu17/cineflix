@@ -325,19 +325,32 @@
       status.classList.remove('hidden');
       status.innerText = `Finding movies for "${moodLabel}" mood...`;
 
+      // Split the search query terms to try fallback if compound search fails
+      const terms = searchQuery.split(' ');
+      let movies = [];
+
       try {
-        const response = await fetch(`/search?query=${encodeURIComponent(searchQuery)}`);
-        const data = await response.json();
+        // Try primary search query first
+        let response = await fetch(`/search?query=${encodeURIComponent(searchQuery)}`);
+        let data = await response.json();
+        movies = data.movies || [];
+
+        // If no movies found and multiple terms exist, try falling back to the first keyword (e.g. 'comedy' or 'sci-fi')
+        if (movies.length === 0 && terms.length > 1) {
+          response = await fetch(`/search?query=${encodeURIComponent(terms[0])}`);
+          data = await response.json();
+          movies = data.movies || [];
+        }
 
         status.classList.add('hidden');
 
-        if (!data.movies || data.movies.length === 0) {
+        if (movies.length === 0) {
           status.classList.remove('hidden');
-          status.innerText = `No movies found matching "${moodLabel}".`;
+          status.innerText = `No movies found matching "${moodLabel}". Try another mood!`;
           return;
         }
 
-        data.movies.forEach(movie => {
+        movies.forEach(movie => {
           const card = document.createElement('div');
           card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
           card.onclick = () => openMovieModal(movie);
@@ -360,7 +373,7 @@
         status.innerText = 'Failed to load mood recommendations.';
       }
     }
-
+    
     function checkPasswordSafety(val) {
       const hint = document.getElementById('passwordHint');
       if (val.length > 0 && val.length < 6) {
