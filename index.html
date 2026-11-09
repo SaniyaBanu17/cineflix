@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cineflix - Watch & Discover</title>
+  <title>Cineflix - Discover & Recommend</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     ::-webkit-scrollbar { height: 8px; }
-    ::-webkit-scrollbar-track { background: #141414; }
-    ::-webkit-scrollbar-thumb { background: #e50914; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
   </style>
 </head>
-<body class="bg-[#141414] text-white min-h-screen font-sans antialiased selection:bg-[#e50914] selection:text-white pt-20">
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-black pt-20">
 
   <!-- Navbar -->
-  <nav class="flex items-center justify-between px-8 py-4 bg-black/80 backdrop-blur-md fixed top-0 w-full z-50 border-b border-zinc-800">
+  <nav class="flex items-center justify-between px-8 py-4 bg-[#070a12]/90 backdrop-blur-md fixed top-0 w-full z-50 border-b border-slate-800/80">
     <div class="flex items-center gap-6">
-      <span class="text-red-600 font-extrabold text-2xl tracking-widest cursor-pointer" onclick="loadCategory('popular', 'Home Feed')">CINEFLIX</span>
-      <div class="hidden md:flex gap-6 text-sm text-zinc-300 font-medium">
-        <a href="#" onclick="loadCategory('popular', 'Home Feed'); return false;" class="text-white hover:text-zinc-300 transition">Home</a>
-        <a href="#" onclick="loadCategory('catalog', 'Movie Catalog'); return false;" class="hover:text-zinc-300 transition">Movies</a>
-        <a href="#" onclick="loadCategory('popular', 'New & Popular'); return false;" class="hover:text-zinc-300 transition">New & Popular</a>
-        <a href="#" onclick="loadWatchlist(); return false;" class="hover:text-zinc-300 transition text-[#e50914] font-semibold">Watchlist</a>  
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 font-black text-2xl tracking-widest cursor-pointer" onclick="loadCategory('popular', 'Home Feed')">CINEFLIX</span>
+      <div class="hidden md:flex gap-6 text-sm text-slate-300 font-medium">
+        <a href="#" onclick="loadCategory('popular', 'Home Feed'); return false;" class="text-cyan-400 hover:text-white transition">Home</a>
+        <a href="#" onclick="loadCategory('catalog', 'Movie Catalog'); return false;" class="hover:text-cyan-400 transition">Movies</a>
+        <a href="#" onclick="loadCategory('popular', 'New & Popular'); return false;" class="hover:text-cyan-400 transition">New & Popular</a>
+        <a href="#" onclick="loadWatchlist(); return false;" class="hover:text-purple-300 transition text-purple-400 font-semibold">Watchlist</a>  
       </div>
     </div>
     
     <!-- Search Bar with Filter Dropdown -->
     <div class="flex items-center gap-2">
-      <select id="searchFilter" class="bg-zinc-900 text-zinc-300 text-xs rounded-full px-3 py-2 border border-zinc-700 focus:outline-none focus:border-[#e50914] transition">
+      <select id="searchFilter" class="bg-slate-900/90 text-slate-300 text-xs rounded-full px-3 py-2 border border-slate-700 focus:outline-none focus:border-cyan-500 transition">
         <option value="all">All Fields</option>
         <option value="title">Title Only</option>
         <option value="genre">By Genre</option>
@@ -38,37 +38,37 @@
         <input 
           id="movieInput" 
           type="text" 
-          placeholder="Search movies, actors, directors..." 
+          placeholder="Search movies, actors..." 
           onkeydown="if(event.key === 'Enter') { getRecommendations(); closeDropdown(); }"
           autocomplete="off"
-          class="bg-zinc-900 text-white placeholder-zinc-500 text-sm rounded-full pl-4 pr-10 py-2 w-64 border border-zinc-700 focus:outline-none focus:border-[#e50914] transition-all"
+          class="bg-slate-900/90 text-white placeholder-slate-500 text-sm rounded-full pl-4 pr-10 py-2 w-64 border border-slate-700 focus:outline-none focus:border-cyan-400 transition-all"
         />
-        <button type="button" onclick="getRecommendations(); closeDropdown();" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-sm cursor-pointer z-20">🔍</button>
+        <button type="button" onclick="getRecommendations(); closeDropdown();" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400 text-sm cursor-pointer z-20">🔍</button>
         
         <!-- Autocomplete Dropdown Box -->
-        <div id="autocompleteDropdown" class="absolute top-12 left-0 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl hidden z-50 overflow-hidden"></div>
+        <div id="autocompleteDropdown" class="absolute top-12 left-0 w-64 bg-slate-900 border border-slate-700 rounded-lg shadow-xl hidden z-50 overflow-hidden"></div>
       </div>
 
-      <button id="navAuthBtn" onclick="openAuthModal()" class="ml-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-full transition cursor-pointer">
+      <button id="navAuthBtn" onclick="openAuthModal()" class="ml-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs px-5 py-2 rounded-full transition cursor-pointer shadow-lg shadow-cyan-500/20">
         Login
       </button>
     </div>
   </nav>
 
   <!-- Featured Movie Banner -->
-  <div id="featuredBanner" class="relative w-full h-[500px] bg-cover bg-center flex items-center px-12 rounded-xl overflow-hidden mb-8 shadow-2xl mx-auto max-w-7xl mt-4" style="background-image: linear-gradient(to right, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.3) 70%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg');">
+  <div id="featuredBanner" class="relative w-full h-[480px] bg-cover bg-center flex items-center px-12 rounded-2xl overflow-hidden mb-8 shadow-2xl mx-auto max-w-7xl mt-4 border border-slate-800" style="background-image: linear-gradient(to right, rgba(11, 15, 25, 0.95) 30%, rgba(11, 15, 25, 0.4) 70%), url('https://image.tmdb.org/t/p/original/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg');">
     <div class="max-w-xl z-10">
       <div class="flex items-center gap-2 mb-3">
-        <span class="bg-red-600 text-white font-black px-2 py-0.5 text-xs rounded tracking-widest shadow">CF</span>
-        <span class="text-zinc-300 tracking-widest text-xs font-semibold uppercase">SERIES • FEATURED</span>
+        <span class="bg-gradient-to-r from-cyan-500 to-purple-500 text-black font-black px-2.5 py-0.5 text-xs rounded tracking-widest shadow">AI ENGINE</span>
+        <span class="text-cyan-400 tracking-widest text-xs font-semibold uppercase">SPOTLIGHT PREVIEW</span>
       </div>
 
       <h1 class="text-5xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg">Interstellar</h1>
-      <p class="text-zinc-200 text-sm mb-6 line-clamp-3 leading-relaxed drop-shadow">When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history: traveling beyond this galaxy to discover whether mankind has a future among the stars.</p>
+      <p class="text-slate-300 text-sm mb-6 line-clamp-3 leading-relaxed drop-shadow">When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history: traveling beyond this galaxy to discover whether mankind has a future among the stars.</p>
       
       <div class="flex items-center gap-4">
-        <button onclick="openMovieModal({title: 'Interstellar', overview: 'When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history...', rating: 8.6, year: '2014', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'})" class="bg-white hover:bg-zinc-200 text-black font-semibold px-6 py-2.5 rounded flex items-center gap-2 transition shadow-lg cursor-pointer">
-          <span>▶️</span> Play Trailer & Info
+        <button onclick="openMovieModal({title: 'Interstellar', overview: 'When Earth becomes uninhabitable, a team of ex-NASA pilots undertakes the most important mission in human history...', rating: 8.6, year: '2014', poster: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'})" class="bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-300 hover:to-teal-300 text-slate-950 font-bold px-6 py-2.5 rounded-lg flex items-center gap-2 transition shadow-lg shadow-cyan-500/20 cursor-pointer">
+          <span>▶</span> Watch Trailer & Info
         </button>
       </div>
     </div>
@@ -76,82 +76,82 @@
 
   <!-- Genre Filter Pills -->
   <div class="px-8 max-w-7xl mx-auto flex flex-wrap gap-2.5 mb-8">
-    <span class="text-zinc-400 text-xs font-bold uppercase tracking-wider self-center mr-2">Genres:</span>
-    <button onclick="filterByGenre('Action')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Action</button>
-    <button onclick="filterByGenre('Comedy')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Comedy</button>
-    <button onclick="filterByGenre('Drama')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Drama</button>
-    <button onclick="filterByGenre('Horror')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Horror</button>
-    <button onclick="filterByGenre('Sci-Fi')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Sci-Fi</button>
-    <button onclick="filterByGenre('Romance')" class="bg-zinc-900 hover:bg-[#e50914] border border-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Romance</button>
+    <span class="text-slate-400 text-xs font-bold uppercase tracking-wider self-center mr-2">Quick Genres:</span>
+    <button onclick="filterByGenre('Action')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Action</button>
+    <button onclick="filterByGenre('Comedy')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Comedy</button>
+    <button onclick="filterByGenre('Drama')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Drama</button>
+    <button onclick="filterByGenre('Horror')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Horror</button>
+    <button onclick="filterByGenre('Sci-Fi')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Sci-Fi</button>
+    <button onclick="filterByGenre('Romance')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Romance</button>
   </div>
 
   <!-- Content Container -->
   <main class="px-8 max-w-7xl mx-auto pb-20">
-    <div id="statusMessage" class="hidden text-zinc-400 text-base mb-6 animate-pulse"></div>
+    <div id="statusMessage" class="hidden text-slate-400 text-base mb-6 animate-pulse"></div>
 
     <!-- Personalized Recommendations Row -->
     <div id="personalizedSection" class="hidden mb-10">
       <h3 class="text-lg font-bold text-white mb-4">
-        Recommended for <span id="personalizedUsername" class="text-red-500">You</span> 
-        <span class="text-xs font-normal text-zinc-400 ml-2">(Based on your activity)</span>
+        Recommended for <span id="personalizedUsername" class="text-cyan-400">You</span> 
+        <span class="text-xs font-normal text-slate-400 ml-2">(Based on your activity preference)</span>
       </h3>
       <div id="personalizedGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
     </div>
 
     <div id="resultsSection" class="space-y-8">
       <div>
-        <h3 class="text-lg font-bold text-white mb-4"><span id="queryTitle" class="text-[#e50914]">Trending & Recommended Movies</span></h3>
+        <h3 class="text-lg font-bold text-white mb-4"><span id="queryTitle" class="text-cyan-400">Trending & Recommended Movies</span></h3>
         <div id="recommendationsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
       </div>
     </div>
   </main>
 
   <!-- Auth Overlay Modal -->
-  <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
-    <div class="bg-gray-900 border border-gray-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative text-white">
-      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-zinc-400 hover:text-white">✕</button>
-      <h2 id="authTitle" class="text-3xl font-bold text-red-600 mb-2 text-center">Login to Cineflix</h2>
-      <p id="authSubtitle" class="text-gray-400 text-sm mb-6 text-center">Welcome back! Please enter your details.</p>
+  <div id="authModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative text-white">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+      <h2 id="authTitle" class="text-3xl font-extrabold text-cyan-400 mb-2 text-center">Login to Cineflix</h2>
+      <p id="authSubtitle" class="text-slate-400 text-sm mb-6 text-center">Welcome back! Please enter your details.</p>
       
       <div id="authAlert" class="hidden mb-4 p-3 rounded text-sm text-center"></div>
 
       <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4">
         <div>
-          <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Username</label>
+          <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Username</label>
           <input type="text" id="authUsername" required placeholder="Enter username" 
-                 class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-400">
         </div>
 
         <div id="passwordFieldGroup">
-          <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Password</label>
+          <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Password</label>
           <input type="password" id="authPassword" placeholder="Enter password" oninput="checkPasswordSafety(this.value)"
-                 class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-400">
           <p id="passwordHint" class="text-xs text-yellow-400 mt-1 hidden">⚠️ Safety Hint: Password should be at least 6 characters long.</p>
         </div>
 
         <div id="forgotPasswordFields" class="hidden space-y-4">
           <div>
-            <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Security Question: Favorite Movie?</label>
+            <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Security Question: Favorite Movie?</label>
             <input type="text" id="authSecurityAnswer" placeholder="e.g. Avatar" 
-                   class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-400">
           </div>
           <div>
-            <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">New Password</label>
+            <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">New Password</label>
             <input type="password" id="authNewPassword" placeholder="Enter new password" 
-                   class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 focus:outline-none focus:border-red-500">
+                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-400">
           </div>
         </div>
 
-        <button type="submit" id="authSubmitBtn" class="w-full bg-red-600 hover:bg-red-700 py-2.5 rounded font-semibold transition cursor-pointer">
+        <button type="submit" id="authSubmitBtn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black py-2.5 rounded-lg font-bold transition cursor-pointer shadow-lg shadow-cyan-500/20">
           Log In
         </button>
       </form>
 
-      <div class="mt-6 text-center text-sm text-gray-400 flex justify-between items-center">
-        <button type="button" onclick="toggleAuthMode()" id="toggleModeBtn" class="hover:text-white underline cursor-pointer">
+      <div class="mt-6 text-center text-sm text-slate-400 flex justify-between items-center">
+        <button type="button" onclick="toggleAuthMode()" id="toggleModeBtn" class="hover:text-cyan-400 underline cursor-pointer">
           Don't have an account? Sign Up
         </button>
-        <button type="button" onclick="showForgotPassword()" id="forgotBtn" class="hover:text-red-400 text-xs cursor-pointer">
+        <button type="button" onclick="showForgotPassword()" id="forgotBtn" class="hover:text-cyan-400 text-xs cursor-pointer">
           Forgot Password?
         </button>
       </div>
@@ -159,35 +159,35 @@
   </div>
 
   <!-- Movie Details Modal -->
-  <div id="movieModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-zinc-900 text-white rounded-xl p-6 relative border border-zinc-800 shadow-2xl flex flex-col md:flex-row gap-6 max-w-2xl w-full">
-      <button onclick="closeMovieModal()" class="absolute top-4 right-4 text-zinc-400 hover:text-white bg-zinc-800 rounded-full w-8 h-8 flex items-center justify-center cursor-pointer z-10">
+  <div id="movieModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 text-white rounded-2xl p-6 relative border border-slate-800 shadow-2xl flex flex-col md:flex-row gap-6 max-w-2xl w-full">
+      <button onclick="closeMovieModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center cursor-pointer z-10">
         ✕
       </button>
 
-      <img id="modalPoster" src="" alt="Poster" class="w-40 h-60 object-cover rounded-lg shadow-md bg-zinc-800 shrink-0 mx-auto md:mx-0">
+      <img id="modalPoster" src="" alt="Poster" class="w-40 h-60 object-cover rounded-xl shadow-md bg-slate-800 shrink-0 mx-auto md:mx-0 border border-slate-700">
 
       <div class="flex flex-col justify-between flex-1">
         <div class="space-y-3">
           <h2 id="modalTitle" class="text-2xl font-bold text-white pr-8"></h2>
-          <div class="flex items-center gap-3 text-xs text-zinc-400">
-            <span id="modalRating" class="bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded font-semibold">★ 7.5</span>
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <span id="modalRating" class="bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded font-semibold border border-cyan-500/30">★ 7.5</span>
             <span id="modalYear">2023</span>
           </div>
-          <p id="modalOverview" class="text-xs text-zinc-300 leading-relaxed max-h-36 overflow-y-auto pr-1">Loading description...</p>
+          <p id="modalOverview" class="text-xs text-slate-300 leading-relaxed max-h-36 overflow-y-auto pr-1">Loading description...</p>
         </div>
         
         <!-- Action Buttons inside Modal -->
-        <div class="flex flex-wrap items-center gap-3 mt-6 pt-4 border-t border-zinc-800">
-          <button id="modalTrailerBtn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded flex items-center gap-1.5 transition cursor-pointer">
-            <span>▶️</span> Watch Trailer
+        <div class="flex flex-wrap items-center gap-3 mt-6 pt-4 border-t border-slate-800">
+          <button id="modalTrailerBtn" class="bg-gradient-to-r from-cyan-500 to-teal-400 text-black font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-md">
+            <span>▶</span> Watch Trailer
           </button>
 
-          <button id="watchlistBtn" onclick="toggleWatchlist()" class="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold px-4 py-2 rounded border border-zinc-700 flex items-center gap-1.5 transition cursor-pointer">
+          <button id="watchlistBtn" onclick="toggleWatchlist()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2 rounded-lg border border-slate-700 flex items-center gap-1.5 transition cursor-pointer">
             <span id="watchlistBtnText">+ Add to Watchlist</span>
           </button>
 
-          <button id="modalTmdbBtn" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold px-3 py-2 rounded border border-zinc-700 transition cursor-pointer">
+          <button id="modalTmdbBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-700 transition cursor-pointer">
             Watch on TMDB
           </button>
         </div>
@@ -228,7 +228,6 @@
       }
     }
 
-    // Tracks user genre and search preferences in localStorage
     function trackUserInterest(searchTermOrGenre) {
       if (!searchTermOrGenre) return;
       const user = localStorage.getItem('cineflixUser');
@@ -242,7 +241,6 @@
       loadPersonalizedFeed();
     }
 
-    // Fetches and renders personalized recommendations for active user based on interest
     async function loadPersonalizedFeed() {
       const user = localStorage.getItem('cineflixUser');
       const section = document.getElementById('personalizedSection');
@@ -265,18 +263,18 @@
           grid.innerHTML = '';
           data.movies.slice(0, 5).forEach(movie => {
             const card = document.createElement('div');
-            card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+            card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
             card.onclick = () => openMovieModal(movie);
 
-            const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+            const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
 
             card.innerHTML = `
               <div class="aspect-[2/3] w-full overflow-hidden">
                 <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
               </div>
-              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                 <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-                <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Recommended for You</span>
+                <span class="bg-cyan-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded w-max mt-2">Recommended</span>
               </div>
             `;
             grid.appendChild(card);
@@ -344,7 +342,7 @@
 
       document.getElementById('modalTitle').innerText = title;
       const posterEl = document.getElementById('modalPoster');
-      if (posterEl) posterEl.src = poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Poster';
+      if (posterEl) posterEl.src = poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Poster';
 
       document.getElementById('modalOverview').innerText = overview;
       document.getElementById('modalRating').innerText = `★ ${rating}`;
@@ -405,12 +403,12 @@
 
       if (exists) {
         btnText.innerText = "✓ In Watchlist";
-        btn.classList.add('bg-red-600', 'border-red-600');
-        btn.classList.remove('bg-zinc-800', 'border-zinc-700');
+        btn.classList.add('bg-cyan-500', 'text-black', 'border-cyan-400');
+        btn.classList.remove('bg-slate-800', 'border-slate-700', 'text-white');
       } else {
         btnText.innerText = "+ Add to Watchlist";
-        btn.classList.remove('bg-red-600', 'border-red-600');
-        btn.classList.add('bg-zinc-800', 'border-zinc-700');
+        btn.classList.remove('bg-cyan-500', 'text-black', 'border-cyan-400');
+        btn.classList.add('bg-slate-800', 'border-slate-700', 'text-white');
       }
     }
 
@@ -426,22 +424,22 @@
 
       if (watchlist.length === 0) {
         status.classList.remove('hidden');
-        status.innerText = "Your Watchlist is currently empty. Explore movies and click 'Add to Watchlist' to save them here!";
+        status.innerText = "Your Watchlist is empty. Explore movies and click 'Add to Watchlist' to save them here!";
         return;
       }
 
       watchlist.forEach(movie => {
         const card = document.createElement('div');
-        card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+        card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
         card.onclick = () => openMovieModal(movie);
 
         card.innerHTML = `
           <div class="aspect-[2/3] w-full overflow-hidden">
-            <img src="${movie.poster}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/500x750/141414/ffffff?text=No+Image'">
+            <img src="${movie.poster}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image'">
           </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
             <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-            <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Manage Watchlist</span>
+            <span class="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded w-max mt-2">In Watchlist</span>
           </div>
         `;
         grid.appendChild(card);
@@ -480,18 +478,18 @@
 
         data.movies.forEach(movie => {
           const card = document.createElement('div');
-          card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+          card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
           card.onclick = () => openMovieModal(movie);
 
-          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
 
           card.innerHTML = `
             <div class="aspect-[2/3] w-full overflow-hidden">
               <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
             </div>
-            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
               <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-              <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Play Trailer & Info</span>
+              <span class="bg-cyan-500 text-black text-[10px] font-bold px-2 py-0.5 rounded w-max mt-2">View Info</span>
             </div>
           `;
           grid.appendChild(card);
@@ -536,18 +534,18 @@
 
         data.movies.forEach(movie => {
           const card = document.createElement('div');
-          card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+          card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
           card.onclick = () => openMovieModal(movie);
 
-          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
 
           card.innerHTML = `
             <div class="aspect-[2/3] w-full overflow-hidden">
               <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
             </div>
-            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
               <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-              <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Play Trailer & Info</span>
+              <span class="bg-cyan-500 text-black text-[10px] font-bold px-2 py-0.5 rounded w-max mt-2">View Info</span>
             </div>
           `;
           grid.appendChild(card);
@@ -580,18 +578,18 @@
         if (data.movies && data.movies.length > 0) {
           data.movies.forEach(movie => {
             const card = document.createElement('div');
-            card.className = 'group relative bg-zinc-900 rounded-md overflow-hidden shadow-md transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-zinc-800 hover:border-zinc-700';
+            card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
             card.onclick = () => openMovieModal(movie);
 
-            const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/141414/ffffff?text=No+Image';
+            const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
 
             card.innerHTML = `
               <div class="aspect-[2/3] w-full overflow-hidden">
                 <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
               </div>
-              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                 <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-                <span class="bg-[#e50914] text-white text-[10px] font-bold px-1.5 py-0.5 rounded w-max mt-2">Play Trailer & Info</span>
+                <span class="bg-cyan-500 text-black text-[10px] font-bold px-2 py-0.5 rounded w-max mt-2">View Info</span>
               </div>
             `;
             grid.appendChild(card);
@@ -606,7 +604,6 @@
       }
     }
 
-    // Autocomplete input listener
     document.getElementById('movieInput').addEventListener('input', async function() {
       const query = this.value.trim();
       const dropdown = document.getElementById('autocompleteDropdown');
@@ -624,7 +621,7 @@
           dropdown.innerHTML = '';
           data.movies.slice(0, 5).forEach(movie => {
             const item = document.createElement('div');
-            item.className = 'px-4 py-2 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer truncate flex items-center gap-2';
+            item.className = 'px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-cyan-400 cursor-pointer truncate flex items-center gap-2';
             item.innerHTML = `<span>🎬</span> <span class="truncate">${movie.title}</span>`;
             
             item.onclick = () => {
@@ -654,7 +651,7 @@
     function showAlert(msg, isSuccess) {
       const alertBox = document.getElementById('authAlert');
       alertBox.innerText = msg;
-      alertBox.className = `mb-4 p-3 rounded text-sm text-center ${isSuccess ? 'bg-green-600/30 text-green-300 border border-green-500' : 'bg-red-600/30 text-red-300 border border-red-500'}`;
+      alertBox.className = `mb-4 p-3 rounded text-sm text-center ${isSuccess ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500' : 'bg-red-600/30 text-red-300 border border-red-500'}`;
       alertBox.classList.remove('hidden');
     }
 
