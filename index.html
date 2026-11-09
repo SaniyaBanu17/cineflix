@@ -520,7 +520,7 @@
       if (queryTitle) queryTitle.innerText = `Results for "${input}"`;
 
       try {
-        const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(input)}&filter=${filter}`);
+        const response = await fetch('/popular');
         if (!response.ok) throw new Error('Search failed.');
 
         const data = await response.json();
