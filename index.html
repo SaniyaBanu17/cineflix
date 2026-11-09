@@ -448,7 +448,7 @@
 
       if (typeof movie === 'string') {
         title = movie;
-        overview = `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
+        overview = "No description found for this title. Check out the trailer below or explore TMDB for more details!";
       } else if (movie && typeof movie === 'object') {
         title = movie.title || movie.name || movie.original_title || "Untitled";
         
@@ -458,7 +458,11 @@
         }
 
         const rawOverview = movie.overview || movie.plot || movie.description || movie.summary || movie.tagline || "";
-        overview = (rawOverview && rawOverview !== 'nan' && rawOverview.trim() !== '') ? rawOverview : `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
+        if (rawOverview && rawOverview !== 'nan' && rawOverview !== 'NaN' && rawOverview.trim() !== '') {
+          overview = rawOverview;
+        } else {
+          overview = "No description found for this title. Check out the trailer below or explore TMDB for more details!";
+        }
         
         const rawRating = movie.vote_average ?? movie.rating ?? movie.score;
         if (rawRating !== undefined && rawRating !== null && !isNaN(rawRating)) {
