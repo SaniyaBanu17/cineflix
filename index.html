@@ -80,7 +80,7 @@
       <span>✨</span> What's Your Mood Today?
     </h3>
     <div class="flex flex-wrap gap-3">
-      <button onclick="filterByMood('Cheer Me Up', 'comedy feel good')" class="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500 hover:to-yellow-500 hover:text-black border border-amber-500/40 text-amber-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+      <button onclick="filterByMood('Cheer Me Up', 'feel good animation')" class="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500 hover:to-yellow-500 hover:text-black border border-amber-500/40 text-amber-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
         <span>😂</span> Cheer Me Up
       </button>
       <button onclick="filterByMood('Adrenaline Rush', 'action thriller')" class="bg-gradient-to-r from-red-500/20 to-orange-500/20 hover:from-red-500 hover:to-orange-500 hover:text-white border border-red-500/40 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
@@ -311,69 +311,69 @@
     }
 
     async function filterByMood(moodLabel, searchQuery) {
-      trackUserInterest(searchQuery);
+  trackUserInterest(searchQuery);
 
-      const grid = document.getElementById('recommendationsGrid');
-      const status = document.getElementById('statusMessage');
-      const queryTitle = document.getElementById('queryTitle');
-      const movieInput = document.getElementById('movieInput');
+  const grid = document.getElementById('recommendationsGrid');
+  const status = document.getElementById('statusMessage');
+  const queryTitle = document.getElementById('queryTitle');
+  const movieInput = document.getElementById('movieInput');
 
-      if (movieInput) movieInput.value = '';
-      if (queryTitle) queryTitle.innerText = `Mood: ${moodLabel}`;
-      
-      grid.innerHTML = '';
-      status.classList.remove('hidden');
-      status.innerText = `Finding movies for "${moodLabel}" mood...`;
+  if (movieInput) movieInput.value = '';
+  if (queryTitle) queryTitle.innerText = `Mood: ${moodLabel}`;
+  
+  grid.innerHTML = '';
+  status.classList.remove('hidden');
+  status.innerText = `Finding movies for "${moodLabel}" mood...`;
 
-      // Split the search query terms to try fallback if compound search fails
-      const terms = searchQuery.split(' ');
-      let movies = [];
+  const terms = searchQuery.split(' ');
+  let movies = [];
 
-      try {
-        // Try primary search query first
-        let response = await fetch(`/search?query=${encodeURIComponent(searchQuery)}`);
-        let data = await response.json();
-        movies = data.movies || [];
+  try {
+    // 1. Try exact mood search query
+    let response = await fetch(`/search?query=${encodeURIComponent(searchQuery)}`);
+    let data = await response.json();
+    movies = data.movies || [];
 
-        // If no movies found and multiple terms exist, try falling back to the first keyword (e.g. 'comedy' or 'sci-fi')
-        if (movies.length === 0 && terms.length > 1) {
-          response = await fetch(`/search?query=${encodeURIComponent(terms[0])}`);
-          data = await response.json();
-          movies = data.movies || [];
-        }
-
-        status.classList.add('hidden');
-
-        if (movies.length === 0) {
-          status.classList.remove('hidden');
-          status.innerText = `No movies found matching "${moodLabel}". Try another mood!`;
-          return;
-        }
-
-        movies.forEach(movie => {
-          const card = document.createElement('div');
-          card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
-          card.onclick = () => openMovieModal(movie);
-
-          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
-
-          card.innerHTML = `
-            <div class="aspect-[2/3] w-full overflow-hidden">
-              <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
-            </div>
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-              <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-              <span class="bg-gradient-to-r from-cyan-500 to-blue-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded w-max mt-2">Mood Match</span>
-            </div>
-          `;
-          grid.appendChild(card);
-        });
-      } catch (err) {
-        status.classList.remove('hidden');
-        status.innerText = 'Failed to load mood recommendations.';
-      }
+    // 2. If no results, try secondary fallback term (e.g. 'animation' or 'family')
+    if (movies.length === 0 && terms.length > 1) {
+      let fallbackTerm = terms[1] || terms[0];
+      response = await fetch(`/search?query=${encodeURIComponent(fallbackTerm)}`);
+      data = await response.json();
+      movies = data.movies || [];
     }
-    
+
+    status.classList.add('hidden');
+
+    if (movies.length === 0) {
+      status.classList.remove('hidden');
+      status.innerText = `No movies found matching "${moodLabel}".`;
+      return;
+    }
+
+    movies.forEach(movie => {
+      const card = document.createElement('div');
+      card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
+      card.onclick = () => openMovieModal(movie);
+
+      const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
+
+      card.innerHTML = `
+        <div class="aspect-[2/3] w-full overflow-hidden">
+          <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+          <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+          <span class="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded w-max mt-2">Mood Match</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    status.classList.remove('hidden');
+    status.innerText = 'Failed to load mood recommendations.';
+  }
+}
+
     function checkPasswordSafety(val) {
       const hint = document.getElementById('passwordHint');
       if (val.length > 0 && val.length < 6) {
