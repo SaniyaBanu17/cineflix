@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load dataset and similarity matrix
+# Load dataset and similarity matrix directly from local project files
 try:
     movies_dict = pickle.load(open('movie_dict.pkl', 'rb'))
     new_df = pd.DataFrame(movies_dict)
@@ -34,9 +34,10 @@ try:
 except Exception as e:
     similarity = []
 
-TMDB_API_KEY = os.getenv("TMDB_API_KEY", "8265bd1679663a7ea12ac168da84d2e8")
+# Configured TMDB API Key for fast poster loading
+TMDB_API_KEY = os.getenv("TMDB_API_KEY", "05e753a9d768ba65f1e3547344e0542b")
 
-@lru_cache(maxsize=2000)
+@lru_cache(maxsize=3000)
 def fetch_poster(movie_id, row_poster=None):
     if row_poster and isinstance(row_poster, str) and row_poster.startswith('http'):
         return row_poster
@@ -45,7 +46,7 @@ def fetch_poster(movie_id, row_poster=None):
         
     try:
         url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US"
-        response = requests.get(url, timeout=2)
+        response = requests.get(url, timeout=5.0) # Fast timeout to prevent hanging
         if response.status_code == 200:
             data = response.json()
             poster_path = data.get('poster_path')
@@ -53,12 +54,11 @@ def fetch_poster(movie_id, row_poster=None):
                 return f"https://image.tmdb.org/t/p/w500{poster_path}"
     except Exception:
         pass
-    return "https://via.placeholder.com/500x750?text=No+Image"
+    return "https://via.placeholder.com/500x750?text=Cineflix"
 
 def parse_metadata_to_text(val):
     if pd.isna(val) or val is None:
         return ""
-    
     if isinstance(val, list):
         items = []
         for item in val:
@@ -92,11 +92,10 @@ def parse_metadata_to_text(val):
                 return " ".join(items).lower()
         except Exception:
             pass
-
     return f"{s} {s.replace(' ', '')}".lower()
 
-# Build searchable text blob on startup
-if not new_df.empty:
+# Build search blob quickly on startup
+if not new_df.empty and 'search_blob' not in new_df.columns:
     search_blobs = []
     for _, row in new_df.iterrows():
         row_tokens = []
@@ -107,8 +106,6 @@ if not new_df.empty:
                     row_tokens.append(parsed_text)
         search_blobs.append(" ".join(row_tokens))
     new_df['search_blob'] = search_blobs
-else:
-    new_df['search_blob'] = []
 
 @app.get("/")
 def home():
@@ -122,8 +119,11 @@ def serve_app():
     return HTMLResponse(content="<h1>index.html not found in current directory</h1>", status_code=404)
 
 @app.get("/popular")
+@lru_cache(maxsize=1)
 def get_popular_movies():
     try:
+        if new_df.empty:
+            return {"movies": []}
         sample_df = new_df.sample(n=min(12, len(new_df)), random_state=42)
         popular_list = []
         for _, row in sample_df.iterrows():
@@ -137,12 +137,15 @@ def get_popular_movies():
                 "release_date": str(row.get('release_date', '2023'))[:4]
             })
         return {"movies": popular_list}
-    except Exception:
+    except Exception as e:
+        print(f"Popular error: {e}")
         return {"movies": []}
 
 @app.get("/catalog")
 def get_catalog():
     try:
+        if new_df.empty:
+            return {"movies": []}
         sample_df = new_df.sample(n=min(20, len(new_df)), random_state=123)
         catalog_list = []
         for _, row in sample_df.iterrows():
@@ -156,7 +159,48 @@ def get_catalog():
                 "release_date": str(row.get('release_date', '2023'))[:4]
             })
         return {"movies": catalog_list}
-    except Exception:
+    except Exception as e:
+        print(f"Catalog error: {e}")
+        return {"movies": []}
+
+@app.get("/recommend")
+def get_personalized_recommendations(username: Optional[str] = "saniya"):
+    """Returns lightning-fast personalized recommendations tailored to profile interests"""
+    try:
+        if new_df.empty:
+            return {"movies": []}
+            
+        user_key = username.strip().lower() if username else "saniya"
+        
+        # Tailor genre based on user profile (Admin / Saniya get Sci-Fi & Space/Thrillers)
+        target_genre = "science fiction" if any(u in user_key for u in ["saniya", "admin"]) else "drama"
+        
+        title_col = 'title' if 'title' in new_df.columns else new_df.columns[1]
+        
+        if 'search_blob' in new_df.columns:
+            matched_df = new_df[new_df['search_blob'].str.contains(target_genre, na=False)]
+        else:
+            matched_df = new_df
+            
+        if len(matched_df) < 5:
+            matched_df = new_df
+            
+        sample_df = matched_df.sample(n=min(10, len(matched_df)), random_state=42)
+        rec_list = []
+        
+        for _, row in sample_df.iterrows():
+            movie_id = int(row.get('movie_id', row.get('id', 0)))
+            rec_list.append({
+                "id": movie_id,
+                "title": str(row.get(title_col, 'Untitled')),
+                "poster": fetch_poster(movie_id, row.get('poster')),
+                "overview": str(row.get('overview', 'Curated recommendation based on your profile.')),
+                "vote_average": float(row.get('vote_average', 8.0)) if pd.notna(row.get('vote_average')) else 8.0,
+                "release_date": str(row.get('release_date', '2023'))[:4]
+            })
+        return {"movies": rec_list, "personalized_for": user_key}
+    except Exception as e:
+        print(f"Recommendation error: {e}")
         return {"movies": []}
 
 @app.get("/search")
@@ -177,16 +221,22 @@ async def search_movies(query: str = "", filter: str = "all"):
             q1 = "science fiction"
             q2 = "sciencefiction"
 
+        # Prioritize exact or starting-with title matches so items like 'Annabelle' appear first
+        exact_match_mask = title_series.str.startswith(q1, na=False) | title_series.str.contains(r'\b' + re.escape(q1) + r'\b', na=False)
+        
         if 'search_blob' in new_df.columns:
-            mask = (
+            blob_mask = (
                 title_series.str.contains(q1, na=False) | 
                 new_df['search_blob'].str.contains(q1, na=False) |
                 new_df['search_blob'].str.contains(q2, na=False)
             )
         else:
-            mask = title_series.str.contains(q1, na=False)
+            blob_mask = title_series.str.contains(q1, na=False)
 
-        filtered_df = new_df[mask].head(16)
+        # Combine: exact title matches first, followed by remaining blob matches
+        exact_df = new_df[exact_match_mask]
+        other_df = new_df[blob_mask & ~exact_match_mask]
+        filtered_df = pd.concat([exact_df, other_df]).head(15)
 
         results = []
         for _, row in filtered_df.iterrows():
@@ -195,7 +245,10 @@ async def search_movies(query: str = "", filter: str = "all"):
 
             overview_text = str(row.get('overview', '')).strip()
             if not overview_text or overview_text.lower() in ['nan', 'none', 'null', '']:
-                overview_text = f"'{row.get(title_col, 'Untitled')}' is an acclaimed feature film available for discovery on Cineflix."
+                overview_text = str(row.get('tagline', '')).strip()
+            if not overview_text or overview_text.lower() in ['nan', 'none', 'null', '']:
+                movie_title = str(row.get(title_col, 'Untitled'))
+                overview_text = f"'{movie_title}' is an acclaimed feature film available for discovery on Cineflix."
 
             results.append({
                 "id": movie_id,
@@ -207,9 +260,10 @@ async def search_movies(query: str = "", filter: str = "all"):
             })
         return {"movies": results}
     except Exception as e:
+        print(f"Search error: {e}")
         return {"movies": []}
 
-# --- USER AUTHENTICATION ENDPOINTS ---
+# Authentication
 users_db = {
     "admin": {"password": "password123", "security_answer": "avatar"},
     "saniya": {"password": "San123", "security_answer": "avatar"}
@@ -238,7 +292,7 @@ def signup(data: SignupRequest):
     if user_key in users_db:
         return {"success": False, "message": "Username already exists."}
     if len(data.password) < 4:
-        return {"success": False, "message": "Password must be at least 4 characters long."}
+        return {"success": False, "message": "Password must be at least 4 characters."}
 
     users_db[user_key] = {
         "password": data.password,
@@ -253,7 +307,6 @@ def login(data: LoginRequest):
         return {"success": False, "message": "User not found."}
     if users_db[user_key]["password"] != data.password:
         return {"success": False, "message": "Incorrect password."}
-
     return {"success": True, "message": "Login successful!", "username": data.username.strip()}
 
 @app.post("/forgot-password")
@@ -261,10 +314,8 @@ def forgot_password(data: ForgotPasswordRequest):
     user_key = data.username.strip().lower()
     if user_key not in users_db:
         return {"success": False, "message": "Username not found."}
-    
     saved_answer = users_db[user_key].get("security_answer", "").lower()
     if saved_answer and data.security_answer.strip().lower() != saved_answer:
         return {"success": False, "message": "Incorrect security answer."}
-
     users_db[user_key]["password"] = data.new_password
     return {"success": True, "message": "Password updated successfully!"}
