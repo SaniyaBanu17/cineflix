@@ -311,68 +311,66 @@
     }
 
     async function filterByMood(moodLabel, searchQuery) {
-  trackUserInterest(searchQuery);
+      trackUserInterest(searchQuery);
 
-  const grid = document.getElementById('recommendationsGrid');
-  const status = document.getElementById('statusMessage');
-  const queryTitle = document.getElementById('queryTitle');
-  const movieInput = document.getElementById('movieInput');
+      const grid = document.getElementById('recommendationsGrid');
+      const status = document.getElementById('statusMessage');
+      const queryTitle = document.getElementById('queryTitle');
+      const movieInput = document.getElementById('movieInput');
 
-  if (movieInput) movieInput.value = '';
-  if (queryTitle) queryTitle.innerText = `Mood: ${moodLabel}`;
-  
-  grid.innerHTML = '';
-  status.classList.remove('hidden');
-  status.innerText = `Finding movies for "${moodLabel}" mood...`;
-
-  const terms = searchQuery.split(' ');
-  let movies = [];
-
-  try {
-    // 1. Try exact mood search query
-    let response = await fetch(`/search?query=${encodeURIComponent(searchQuery)}`);
-    let data = await response.json();
-    movies = data.movies || [];
-
-    // 2. If no results, try secondary fallback term (e.g. 'animation' or 'family')
-    if (movies.length === 0 && terms.length > 1) {
-      let fallbackTerm = terms[1] || terms[0];
-      response = await fetch(`/search?query=${encodeURIComponent(fallbackTerm)}`);
-      data = await response.json();
-      movies = data.movies || [];
-    }
-
-    status.classList.add('hidden');
-
-    if (movies.length === 0) {
+      if (movieInput) movieInput.value = '';
+      if (queryTitle) queryTitle.innerText = `Mood: ${moodLabel}`;
+      
+      grid.innerHTML = '';
       status.classList.remove('hidden');
-      status.innerText = `No movies found matching "${moodLabel}".`;
-      return;
+      status.innerText = `Finding movies for "${moodLabel}" mood...`;
+
+      const terms = searchQuery.split(' ');
+      let movies = [];
+
+      try {
+        let response = await fetch(`/search?query=${encodeURIComponent(searchQuery)}`);
+        let data = await response.json();
+        movies = data.movies || [];
+
+        if (movies.length === 0 && terms.length > 1) {
+          let fallbackTerm = terms[1] || terms[0];
+          response = await fetch(`/search?query=${encodeURIComponent(fallbackTerm)}`);
+          data = await response.json();
+          movies = data.movies || [];
+        }
+
+        status.classList.add('hidden');
+
+        if (movies.length === 0) {
+          status.classList.remove('hidden');
+          status.innerText = `No movies found matching "${moodLabel}".`;
+          return;
+        }
+
+        movies.forEach(movie => {
+          const card = document.createElement('div');
+          card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
+          card.onclick = () => openMovieModal(movie);
+
+          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
+
+          card.innerHTML = `
+            <div class="aspect-[2/3] w-full overflow-hidden">
+              <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+              <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+              <span class="bg-gradient-to-r from-cyan-500 to-blue-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded w-max mt-2">Mood Match</span>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        status.classList.remove('hidden');
+        status.innerText = 'Failed to load mood recommendations.';
+      }
     }
-
-    movies.forEach(movie => {
-      const card = document.createElement('div');
-      card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
-      card.onclick = () => openMovieModal(movie);
-
-      const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
-
-      card.innerHTML = `
-        <div class="aspect-[2/3] w-full overflow-hidden">
-          <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
-        </div>
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-          <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
-          <span class="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded w-max mt-2">Mood Match</span>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-  } catch (err) {
-    status.classList.remove('hidden');
-    status.innerText = 'Failed to load mood recommendations.';
-  }
-}
 
     function checkPasswordSafety(val) {
       const hint = document.getElementById('passwordHint');
@@ -388,10 +386,81 @@
       if (dropdown) dropdown.classList.add('hidden');
     }
 
+    function openMovieModal(movie) {
+      let title = "Untitled";
+      let poster = "";
+      let overview = "";
+      let rating = "7.5";
+      let year = "2023";
+      let tmdbId = null;
+      let runtime = 120;
+
+      if (typeof movie === 'string') {
+        title = movie;
+        overview = `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
+      } else if (movie && typeof movie === 'object') {
+        title = movie.title || movie.name || movie.original_title || "Untitled";
+        
+        poster = movie.poster || movie.poster_path || movie.image || "";
+        if (poster && poster.startsWith('/')) {
+          poster = 'https://image.tmdb.org/t/p/w500' + poster;
+        }
+
+        const rawOverview = movie.overview || movie.plot || movie.description || movie.summary || movie.tagline || "";
+        overview = (rawOverview && rawOverview !== 'nan' && rawOverview.trim() !== '') ? rawOverview : `'${title}' is an acclaimed feature film available for discovery on Cineflix.`;
+        
+        const rawRating = movie.vote_average ?? movie.rating ?? movie.score;
+        if (rawRating !== undefined && rawRating !== null && !isNaN(rawRating)) {
+          rating = typeof rawRating === 'number' ? rawRating.toFixed(1) : rawRating;
+        }
+
+        const rawDate = movie.release_date || movie.year || movie.releaseDate || "";
+        if (rawDate && rawDate !== 'nan') {
+          year = String(rawDate).substring(0, 4);
+        }
+        tmdbId = movie.id || movie.movie_id || null;
+        runtime = movie.runtime || 120;
+      }
+
+      currentSelectedMovie = { title, poster, overview, rating, year, id: tmdbId, runtime };
+      console.log("Movie Loaded into Modal:", currentSelectedMovie);
+
+      document.getElementById('modalTitle').innerText = title;
+      const posterEl = document.getElementById('modalPoster');
+      if (posterEl) posterEl.src = poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Poster';
+
+      document.getElementById('modalOverview').innerText = overview;
+      document.getElementById('modalRating').innerText = `★ ${rating}`;
+      document.getElementById('modalYear').innerText = year;
+
+      updateWatchlistButtonState();
+
+      document.getElementById('modalTrailerBtn').onclick = () => {
+        window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' official trailer')}`, '_blank');
+      };
+
+      document.getElementById('modalTmdbBtn').onclick = () => {
+        const targetUrl = tmdbId ? `https://www.themoviedb.org/movie/${tmdbId}` : `https://www.themoviedb.org/search?query=${encodeURIComponent(title)}`;
+        window.open(targetUrl, '_blank');
+      };
+
+      document.getElementById('movieModal').classList.remove('hidden');
+    }
+
+    function closeMovieModal() {
+      document.getElementById('movieModal').classList.add('hidden');
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('movieModal');
+      if (event.target === modal) {
+        closeMovieModal();
+      }
+    };
+
     function toggleWatchlist() {
       if (!currentSelectedMovie || !currentSelectedMovie.title) {
-        console.error("Watchlist Error: No movie selected or movie object is missing!");
-        alert("Please select a movie first before adding it to your watchlist.");
+        alert("Please select a valid movie first.");
         return;
       }
 
@@ -399,7 +468,6 @@
       try {
         watchlist = JSON.parse(localStorage.getItem('cineflix_watchlist')) || [];
       } catch (e) {
-        console.warn("LocalStorage read error, resetting watchlist.");
         watchlist = [];
       }
 
@@ -407,17 +475,13 @@
 
       if (index > -1) {
         watchlist.splice(index, 1);
+        console.log("Removed from watchlist:", currentSelectedMovie.title);
       } else {
         watchlist.push(currentSelectedMovie);
+        console.log("Added to watchlist:", currentSelectedMovie.title);
       }
 
-      try {
-        localStorage.setItem('cineflix_watchlist', JSON.stringify(watchlist));
-      } catch (e) {
-        alert("Storage is full or disabled in this browser mode (e.g. Incognito).");
-        return;
-      }
-
+      localStorage.setItem('cineflix_watchlist', JSON.stringify(watchlist));
       updateWatchlistButtonState();
     }
 
@@ -463,12 +527,10 @@
         return;
       }
 
-      // Calculate total runtime
       const totalMinutes = watchlist.reduce((acc, movie) => acc + (movie.runtime || 120), 0);
       const totalHours = (totalMinutes / 60).toFixed(1);
       const daysAtTwoHours = (totalMinutes / 120).toFixed(1);
 
-      // Render Binge Estimator Stats Banner
       const statsBanner = document.createElement('div');
       statsBanner.className = 'col-span-full bg-slate-900/90 border border-cyan-500/30 p-5 rounded-2xl mb-6 shadow-xl flex flex-wrap items-center justify-between gap-4';
       statsBanner.innerHTML = `
@@ -492,7 +554,6 @@
       `;
       grid.appendChild(statsBanner);
 
-      // Render Movie Cards
       watchlist.forEach(movie => {
         const card = document.createElement('div');
         card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
