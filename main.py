@@ -107,9 +107,12 @@ if not new_df.empty and 'search_blob' not in new_df.columns:
         search_blobs.append(" ".join(row_tokens))
     new_df['search_blob'] = search_blobs
 
-@app.get("/")
-def home():
-    return {"message": "Welcome to the Cineflix Recommendation API!"}
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    if os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    return HTMLResponse(content="<h1>index.html not found in current directory</h1>", status_code=404)
 
 @app.get("/app", response_class=HTMLResponse)
 def serve_app():
@@ -319,3 +322,4 @@ def forgot_password(data: ForgotPasswordRequest):
         return {"success": False, "message": "Incorrect security answer."}
     users_db[user_key]["password"] = data.new_password
     return {"success": True, "message": "Password updated successfully!"}
+
