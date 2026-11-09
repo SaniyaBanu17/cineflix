@@ -74,9 +74,33 @@
     </div>
   </div>
 
+  <!-- Mood / Emotion-Based Filter Section -->
+  <div class="px-8 max-w-7xl mx-auto mb-6">
+    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+      <span>✨</span> What's Your Mood Today?
+    </h3>
+    <div class="flex flex-wrap gap-3">
+      <button onclick="filterByMood('Cheer Me Up', 'comedy feel good')" class="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500 hover:to-yellow-500 hover:text-black border border-amber-500/40 text-amber-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+        <span>😂</span> Cheer Me Up
+      </button>
+      <button onclick="filterByMood('Adrenaline Rush', 'action thriller')" class="bg-gradient-to-r from-red-500/20 to-orange-500/20 hover:from-red-500 hover:to-orange-500 hover:text-white border border-red-500/40 text-red-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+        <span>⚡</span> Adrenaline Rush
+      </button>
+      <button onclick="filterByMood('Mind-Bending', 'sci-fi mystery')" class="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 hover:from-purple-500 hover:to-indigo-500 hover:text-white border border-purple-500/40 text-purple-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+        <span>🧠</span> Mind-Bending
+      </button>
+      <button onclick="filterByMood('Deep & Emotional', 'drama romance')" class="bg-gradient-to-r from-pink-500/20 to-rose-500/20 hover:from-pink-500 hover:to-rose-500 hover:text-white border border-pink-500/40 text-pink-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+        <span>🥹</span> Deep & Emotional
+      </button>
+      <button onclick="filterByMood('Spooky Night', 'horror thriller')" class="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500 hover:to-teal-500 hover:text-black border border-emerald-500/40 text-emerald-300 text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer">
+        <span>👻</span> Spooky Night
+      </button>
+    </div>
+  </div>
+
   <!-- Genre Filter Pills -->
   <div class="px-8 max-w-7xl mx-auto flex flex-wrap gap-2.5 mb-8">
-    <span class="text-slate-400 text-xs font-bold uppercase tracking-wider self-center mr-2">Quick Genres:</span>
+    <span class="text-slate-400 text-xs font-bold uppercase tracking-wider self-center mr-2">Genres:</span>
     <button onclick="filterByGenre('Action')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Action</button>
     <button onclick="filterByGenre('Comedy')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Comedy</button>
     <button onclick="filterByGenre('Drama')" class="bg-slate-900/80 hover:bg-cyan-500 hover:text-black border border-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-full transition shadow cursor-pointer">Drama</button>
@@ -283,6 +307,57 @@
         }
       } catch (err) {
         console.log('Personalized feed error:', err);
+      }
+    }
+
+    async function filterByMood(moodLabel, searchQuery) {
+      trackUserInterest(searchQuery);
+
+      const grid = document.getElementById('recommendationsGrid');
+      const status = document.getElementById('statusMessage');
+      const queryTitle = document.getElementById('queryTitle');
+      const movieInput = document.getElementById('movieInput');
+
+      if (movieInput) movieInput.value = '';
+      if (queryTitle) queryTitle.innerText = `Mood: ${moodLabel}`;
+      
+      grid.innerHTML = '';
+      status.classList.remove('hidden');
+      status.innerText = `Finding movies for "${moodLabel}" mood...`;
+
+      try {
+        const response = await fetch(`/search?query=${encodeURIComponent(searchQuery)}`);
+        const data = await response.json();
+
+        status.classList.add('hidden');
+
+        if (!data.movies || data.movies.length === 0) {
+          status.classList.remove('hidden');
+          status.innerText = `No movies found matching "${moodLabel}".`;
+          return;
+        }
+
+        data.movies.forEach(movie => {
+          const card = document.createElement('div');
+          card.className = 'group relative bg-slate-900 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-105 hover:z-20 cursor-pointer border border-slate-800 hover:border-cyan-500/50';
+          card.onclick = () => openMovieModal(movie);
+
+          const posterUrl = movie.poster || 'https://via.placeholder.com/500x750/0b0f19/ffffff?text=No+Image';
+
+          card.innerHTML = `
+            <div class="aspect-[2/3] w-full overflow-hidden">
+              <img src="${posterUrl}" alt="${movie.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+              <h4 class="font-bold text-white text-sm truncate">${movie.title}</h4>
+              <span class="bg-gradient-to-r from-cyan-500 to-blue-500 text-black text-[10px] font-extrabold px-2 py-0.5 rounded w-max mt-2">Mood Match</span>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        status.classList.remove('hidden');
+        status.innerText = 'Failed to load mood recommendations.';
       }
     }
 
